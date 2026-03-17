@@ -14,22 +14,25 @@
 
     <!-- 子模块定义 -->
     <modules>
-        <module>nexus-user</module>
+        <module>user-deprecated</module>
+        <module>common</module>
+        <module>auth</module>
+        <module>user-management</module>
     </modules>
 
     <!-- Spring Boot父依赖 -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.7</version>
+        <version>3.5.11</version>
         <relativePath/>
     </parent>
 
     <!-- 全局属性配置 -->
     <properties>
-        <java.version>17</java.version>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <java.version>21</java.version>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         
@@ -39,11 +42,19 @@
         <postgresql.version>42.7.3</postgresql.version>
         <hutool.version>5.8.28</hutool.version>
         <flyway.version>10.17.0</flyway.version>
+        <spring-cloud.version>2025.0.1</spring-cloud.version>
     </properties>
 
     <!-- 依赖版本管理 -->
     <dependencyManagement>
         <dependencies>
+            <!-- Lombok -->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>1.18.44</version>
+            </dependency>
+            
             <!-- MyBatis-Flex -->
             <dependency>
                 <groupId>com.mybatis-flex</groupId>
@@ -93,6 +104,16 @@
                 <artifactId>flyway-database-postgresql</artifactId>
                 <version>${flyway.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            
+            
         </dependencies>
     </dependencyManagement>
 
