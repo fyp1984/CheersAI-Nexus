@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * @ClassName:SysUser
- * @Description:TODO
+ * @Description:系统用户类（暂定）
  * @Author:userSigma
  * @CreateDate:2026/3/17 21:22
  */

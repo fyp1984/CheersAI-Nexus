@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * @ClassName:UserServiceImpl
- * @Description:TODO
+ * @Description:用户管理Service
  * @Author:userSigma
  * @CreateDate:2026/3/17 21:57
  */

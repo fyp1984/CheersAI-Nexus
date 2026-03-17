@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * @ClassName:AuthController
- * @Description:TODO
+ * @Description:系统用户注册及登录接口（暂未开发）
  * @Author:userSigma
  * @CreateDate:2026/3/17 21:21
  */
