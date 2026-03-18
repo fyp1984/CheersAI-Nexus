@@ -6,7 +6,7 @@
         <div class="title">用户反馈管理</div>
         <div class="subtitle">处理用户提交的各类反馈与建议</div>
       </div>
-      <el-tag type="danger" size="large">P0 紧急</el-tag>
+      <el-tag type="danger" size="large">P0</el-tag>
     </div>
 
     <!-- 数据概览（调整到操作栏上方） -->

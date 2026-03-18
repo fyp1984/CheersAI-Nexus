@@ -6,7 +6,7 @@
         <div class="title">会员方案管理</div>
         <div class="subtitle">管理会员等级、价格及权益配置</div>
       </div>
-      <el-tag type="danger" size="large">P0 核心</el-tag>
+      <el-tag type="danger" size="large">P0</el-tag>
     </div>
 
     <!-- 数据概览卡片 -->
