@@ -1,3 +1,25 @@
 spring:
   application:
     name: user
+
+server:
+  port: 8081
+  
+mybatis-flex:
+  mapper-locations:
+    - classpath*:/mapper/*.xml
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  datasource:
+    master:
+      dataSourceClassName: com.alibaba.druid.pool.DruidDataSource
+      driverClassName: org.postgresql.Driver
+      url: jdbc:postgresql://192.168.20.200:5000/alif?currentSchema=login
+      username: postgres
+      password: yuanyuan1234
+    slave:
+      dataSourceClassName: com.alibaba.druid.pool.DruidDataSource
+      driverClassName: org.postgresql.Driver
+      url: jdbc:postgresql://192.168.20.200:5001/alif?currentSchema=login
+      username: postgres
+      password: yuanyuan1234

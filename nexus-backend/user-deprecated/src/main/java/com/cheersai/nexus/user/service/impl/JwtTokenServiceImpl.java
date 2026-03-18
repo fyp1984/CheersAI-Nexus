@@ -1,6 +1,6 @@
 package com.cheersai.nexus.user.service.impl;
 
-import com.cheersai.nexus.model.usermanagement.User;
+import com.cheersai.nexus.common.model.usermanagement.User;
 import com.cheersai.nexus.user.service.JwtTokenService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
