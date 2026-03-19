@@ -1,68 +1,47 @@
-import axios, { type AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
-import { decryptPayload, encryptPayload, signPayload, verifyPayloadSignature } from './crypto'
+import axios, { type AxiosError, type AxiosInstance, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '../constants/auth'
 
-export type ApiResponse<T = unknown> = {
-  code?: number
-  message?: string
-  result?: T
-  sign?: string
-  [key: string]: unknown
+declare module 'axios' {
+  interface AxiosRequestConfig {
+    skipAuth?: boolean
+  }
 }
 
-type SecureRequestConfig = InternalAxiosRequestConfig & {
-  skipCrypto?: boolean
+export type ApiResponse<T = unknown> = {
+  code: number
+  message: string
+  data: T
+}
+
+type RequestConfig = InternalAxiosRequestConfig & {
+  skipAuth?: boolean
 }
 
 const request: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/',
   timeout: 15000
 })
 
-request.interceptors.request.use(async (config) => {
-  const secureConfig = config as SecureRequestConfig
-  const method = (secureConfig.method || 'get').toLowerCase()
-  const shouldEncrypt =
-    !secureConfig.skipCrypto &&
-    ['post', 'put', 'patch', 'delete'].includes(method) &&
-    secureConfig.data !== undefined &&
-    !(secureConfig.data instanceof FormData)
+request.interceptors.request.use((config) => {
+  const nextConfig = config as RequestConfig
+  if (nextConfig.skipAuth) return nextConfig
 
-  if (!shouldEncrypt) {
-    return secureConfig
+  const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY)
+  const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
+
+  if (accessToken) {
+    nextConfig.headers.set('Authorization', `Bearer ${accessToken}`)
+  }
+  if (refreshToken) {
+    nextConfig.headers.set('X-Refresh-Token', refreshToken)
   }
 
-  const originalData = secureConfig.data ?? {}
-  const input = await encryptPayload(originalData)
-  const sign = await signPayload(originalData)
-  secureConfig.data = { input, sign }
-  return secureConfig
+  return nextConfig
 })
 
 request.interceptors.response.use(
-  async (response) => {
-    const secureConfig = response.config as SecureRequestConfig
-    const body = response.data as ApiResponse
-
-    if (
-      !secureConfig.skipCrypto &&
-      body &&
-      typeof body === 'object' &&
-      typeof body.result === 'string'
-    ) {
-      const decrypted = await decryptPayload(body.result)
-      if (typeof body.sign === 'string' && body.sign.length > 0) {
-        const isValid = await verifyPayloadSignature(decrypted, body.sign)
-        if (!isValid) {
-          throw new Error('Response signature verification failed')
-        }
-      }
-      body.result = decrypted
-    }
-
-    response.data = body
-    return response
-  },
-  (error: AxiosError) => Promise.reject(error)
+  (response: AxiosResponse<ApiResponse>) => response,
+  (error: AxiosError<ApiResponse>) => Promise.reject(error)
 )
 
 export default request
