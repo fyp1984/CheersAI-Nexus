@@ -13,6 +13,10 @@ export default defineConfig({
       '/api/v1/users': {
         target: 'http://localhost:8081',
         changeOrigin: true
+      },
+      '/api/v1/feedbacks': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
       }
     }
   }

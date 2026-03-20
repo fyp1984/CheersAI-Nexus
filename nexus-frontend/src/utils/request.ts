@@ -26,6 +26,12 @@ request.interceptors.request.use((config) => {
   const nextConfig = config as RequestConfig
   if (nextConfig.skipAuth) return nextConfig
 
+  // Prevent duplicated '/api' when VITE_API_BASE_URL='/api' and request url starts with '/api/...'.
+  const base = (nextConfig.baseURL || '').replace(/\/+$/, '')
+  if (base.endsWith('/api') && typeof nextConfig.url === 'string' && nextConfig.url.startsWith('/api/')) {
+    nextConfig.url = nextConfig.url.replace(/^\/api/, '')
+  }
+
   const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY)
   const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY)
 
