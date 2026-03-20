@@ -6,9 +6,6 @@ import com.mybatisflex.core.table.TableDef;
 // Auto generate by mybatis-flex, do not modify it.
 public class UserTableDef extends TableDef {
 
-    /**
-     * 用户实体类
-     */
     public static final UserTableDef USER = new UserTableDef();
 
     public final QueryColumn EMAIL = new QueryColumn(this, "email");
@@ -25,9 +22,9 @@ public class UserTableDef extends TableDef {
 
     public final QueryColumn AVATAR_URL = new QueryColumn(this, "avatar_url");
 
-    public final QueryColumn CREATED_AT = new QueryColumn(this, "create_at");
+    public final QueryColumn CREATED_AT = new QueryColumn(this, "created_at");
 
-    public final QueryColumn UPDATED_AT = new QueryColumn(this, "update_at");
+    public final QueryColumn UPDATED_AT = new QueryColumn(this, "updated_at");
 
     public final QueryColumn LAST_LOGIN_AT = new QueryColumn(this, "last_login_at");
 
@@ -50,7 +47,7 @@ public class UserTableDef extends TableDef {
     public final QueryColumn[] DEFAULT_COLUMNS = new QueryColumn[]{EMAIL, PHONE, STATUS, USER_ID, NICKNAME, USERNAME, AVATAR_URL, CREATED_AT, UPDATED_AT, LAST_LOGIN_AT, LAST_LOGIN_IP, PASSWORD_HASH, EMAIL_VERIFIED, PHONE_VERIFIED};
 
     public UserTableDef() {
-        super("", "user");
+        super("", "users");
     }
 
     private UserTableDef(String schema, String name, String alisa) {
@@ -59,7 +56,7 @@ public class UserTableDef extends TableDef {
 
     public UserTableDef as(String alias) {
         String key = getNameWithSchema() + "." + alias;
-        return getCache(key, k -> new UserTableDef("", "user", alias));
+        return getCache(key, k -> new UserTableDef("", "users", alias));
     }
 
 }
