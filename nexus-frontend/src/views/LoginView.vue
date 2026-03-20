@@ -1,67 +1,133 @@
-﻿<script setup lang="ts">
-import { reactive } from 'vue'
+<script setup lang="ts">
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { login } from '../api/auth'
 import { useAuthStore } from '../store/modules/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
+const loading = ref(false)
 const form = reactive({
-  account: '',
-  password: ''
+  identity: 'dev@cheersai.local',
+  password: 'Dev@123456'
 })
 
-function handleLogin() {
-  authStore.setToken('mock-nexus-token')
-  router.push('/dashboard')
+function buildLoginPayload() {
+  const identity = form.identity.trim()
+  if (!identity) {
+    return null
+  }
+
+  const isEmail = identity.includes('@')
+  if (isEmail) {
+    return { email: identity, password: form.password }
+  }
+
+  return { phone: identity, password: form.password }
+}
+
+async function handleLogin() {
+  if (!form.identity || !form.password) {
+    ElMessage.warning('请输入邮箱或手机号及密码')
+    return
+  }
+
+  const payload = buildLoginPayload()
+  if (!payload) {
+    ElMessage.warning('请输入有效的邮箱或手机号')
+    return
+  }
+
+  loading.value = true
+  try {
+    const response = await login(payload)
+    const authData = response.data.data
+    authStore.setAuth({
+      accessToken: authData.accessToken,
+      refreshToken: authData.refreshToken
+    })
+    ElMessage.success('登录成功')
+    router.push('/dashboard')
+  } catch (error: any) {
+    const message = error?.response?.data?.message || '登录失败'
+    ElMessage.error(message)
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
 <template>
-  <div class="login-page">
-    <el-card class="login-card" shadow="never">
+  <div class="auth-page">
+    <el-card class="auth-card" shadow="never">
       <template #header>
-        <h2>CheersAI Nexus 登录</h2>
+        <div class="card-header">
+          <div>
+            <div class="header-title">登录</div>
+            <div class="header-subtitle">邮箱或手机号登录 Nexus 运营平台</div>
+          </div>
+        </div>
       </template>
+
       <el-form label-position="top">
-        <el-form-item label="账号">
-          <el-input v-model="form.account" placeholder="请输入账号" />
+        <el-form-item label="邮箱或手机号">
+          <el-input v-model="form.identity" placeholder="请输入邮箱或手机号" clearable />
         </el-form-item>
         <el-form-item label="密码">
           <el-input v-model="form.password" type="password" show-password placeholder="请输入密码" />
         </el-form-item>
-        <el-button type="primary" class="submit-btn" @click="handleLogin">登录</el-button>
+        <el-button type="primary" class="submit-btn" :loading="loading" @click="handleLogin">登录</el-button>
       </el-form>
-      <div class="actions">
-        <el-button link type="primary" @click="router.push('/register')">去注册</el-button>
+
+      <div class="bottom-actions">
+        <el-button link type="primary" @click="router.push('/register')">注册账号</el-button>
       </div>
     </el-card>
   </div>
 </template>
 
 <style scoped>
-.login-page {
+.auth-page {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  background: linear-gradient(135deg, #e6f4ff 0%, #f5f8ff 100%);
-  padding: 16px;
+  background: linear-gradient(145deg, #edf5ff 0%, #f7f9fc 40%, #eef2f9 100%);
+  padding: 20px;
 }
 
-.login-card {
-  width: min(100%, 420px);
+.auth-card {
+  width: min(460px, 100%);
+  border-radius: 14px;
+  border: 1px solid #e8edf5;
 }
 
-h2 {
-  margin: 0;
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.header-subtitle {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 13px;
 }
 
 .submit-btn {
   width: 100%;
 }
 
-.actions {
-  margin-top: 8px;
-  text-align: right;
+.bottom-actions {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

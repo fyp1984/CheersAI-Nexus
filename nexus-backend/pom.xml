@@ -43,6 +43,7 @@
         <hutool.version>5.8.28</hutool.version>
         <flyway.version>10.17.0</flyway.version>
         <spring-cloud.version>2025.0.1</spring-cloud.version>
+        <jackson-databind.version>2.21.1</jackson-databind.version>
     </properties>
 
     <!-- 依赖版本管理 -->
@@ -111,6 +112,12 @@
                 <version>${spring-cloud.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson-databind.version}</version>
             </dependency>
             
             

@@ -3,7 +3,7 @@ package com.cheersai.nexus.user.service.impl;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.crypto.digest.BCrypt;
 import com.cheersai.nexus.user.model.RefreshToken;
-import com.cheersai.nexus.model.usermanagement.User;
+import com.cheersai.nexus.common.model.usermanagement.User;
 import com.cheersai.nexus.user.model.VerifyCode;
 import com.cheersai.nexus.user.enums.UserStatus;
 import com.cheersai.nexus.user.mapper.RefreshTokenMapper;

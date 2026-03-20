@@ -1,5 +1,6 @@
 package com.cheersai.nexus.user.common.api;
 
+import com.cheersai.nexus.common.model.base.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindException;

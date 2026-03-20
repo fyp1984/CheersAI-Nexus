@@ -1,26 +1,40 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-
-const TOKEN_KEY = 'nexus_token'
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '../../constants/auth'
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref<string>(localStorage.getItem(TOKEN_KEY) || '')
+  const accessToken = ref<string>(localStorage.getItem(ACCESS_TOKEN_KEY) || '')
+  const refreshToken = ref<string>(localStorage.getItem(REFRESH_TOKEN_KEY) || '')
 
-  const isAuthenticated = computed(() => token.value.length > 0)
+  const token = computed(() => accessToken.value)
+  const isAuthenticated = computed(() => accessToken.value.length > 0)
+
+  function setAuth(tokens: { accessToken: string; refreshToken?: string }) {
+    accessToken.value = tokens.accessToken
+    localStorage.setItem(ACCESS_TOKEN_KEY, tokens.accessToken)
+    if (tokens.refreshToken !== undefined) {
+      refreshToken.value = tokens.refreshToken
+      localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refreshToken)
+    }
+  }
 
   function setToken(value: string) {
-    token.value = value
-    localStorage.setItem(TOKEN_KEY, value)
+    setAuth({ accessToken: value })
   }
 
   function clearToken() {
-    token.value = ''
-    localStorage.removeItem(TOKEN_KEY)
+    accessToken.value = ''
+    refreshToken.value = ''
+    localStorage.removeItem(ACCESS_TOKEN_KEY)
+    localStorage.removeItem(REFRESH_TOKEN_KEY)
   }
 
   return {
+    accessToken,
+    refreshToken,
     token,
     isAuthenticated,
+    setAuth,
     setToken,
     clearToken
   }

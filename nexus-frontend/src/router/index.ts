@@ -1,4 +1,5 @@
-﻿import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { useAuthStore } from '../store/modules/auth'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -84,6 +85,19 @@ const router = createRouter({
 router.beforeEach((to) => {
   const pageTitle = (to.meta.title as string | undefined) || 'CheersAI Nexus'
   document.title = `${pageTitle} - CheersAI Nexus`
+
+  const authStore = useAuthStore()
+  const isPublicRoute = to.path === '/login' || to.path === '/register'
+
+  if (!isPublicRoute && !authStore.isAuthenticated) {
+    return '/login'
+  }
+
+  if (isPublicRoute && authStore.isAuthenticated) {
+    return '/dashboard'
+  }
+
+  return true
 })
 
 export default router
