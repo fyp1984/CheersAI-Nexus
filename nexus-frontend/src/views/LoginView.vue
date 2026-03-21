@@ -3,15 +3,17 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { login } from '../api/auth'
+import { DEV_LOGIN_IDENTITY, DEV_LOGIN_PASSWORD } from '../constants/auth'
 import { useAuthStore } from '../store/modules/auth'
+import { getErrorMessage } from '../utils/api'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
 const loading = ref(false)
 const form = reactive({
-  identity: 'dev@cheersai.local',
-  password: 'Dev@123456'
+  identity: DEV_LOGIN_IDENTITY,
+  password: DEV_LOGIN_PASSWORD
 })
 
 function buildLoginPayload() {
@@ -42,17 +44,16 @@ async function handleLogin() {
 
   loading.value = true
   try {
-    const response = await login(payload)
-    const authData = response.data.data
+    const authData = await login(payload)
     authStore.setAuth({
       accessToken: authData.accessToken,
-      refreshToken: authData.refreshToken
+      refreshToken: authData.refreshToken,
+      user: authData.user
     })
     ElMessage.success('登录成功')
     router.push('/dashboard')
-  } catch (error: any) {
-    const message = error?.response?.data?.message || '登录失败'
-    ElMessage.error(message)
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '登录失败'))
   } finally {
     loading.value = false
   }
@@ -71,7 +72,7 @@ async function handleLogin() {
         </div>
       </template>
 
-      <el-form label-position="top">
+      <el-form label-position="top" @submit.prevent="handleLogin">
         <el-form-item label="邮箱或手机号">
           <el-input v-model="form.identity" placeholder="请输入邮箱或手机号" clearable />
         </el-form-item>
@@ -80,6 +81,8 @@ async function handleLogin() {
         </el-form-item>
         <el-button type="primary" class="submit-btn" :loading="loading" @click="handleLogin">登录</el-button>
       </el-form>
+
+      <div class="dev-hint">开发环境已预置测试账号和密码，启动后点击登录即可直接进入页面检查。</div>
 
       <div class="bottom-actions">
         <el-button link type="primary" @click="router.push('/register')">注册账号</el-button>
@@ -123,6 +126,13 @@ async function handleLogin() {
 
 .submit-btn {
   width: 100%;
+}
+
+.dev-hint {
+  margin-top: 12px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .bottom-actions {

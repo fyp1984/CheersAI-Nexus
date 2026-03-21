@@ -8,6 +8,7 @@ import {
   updateFeedback,
   type FeedbackRecord
 } from '../api/feedback'
+import { getErrorMessage } from '../utils/api'
 
 const loading = ref(false)
 const detailLoading = ref(false)
@@ -54,6 +55,13 @@ const priorityOptions = [
   { label: '紧急', value: 'urgent' }
 ]
 
+const typeOptions = [
+  { label: '缺陷', value: 'bug' },
+  { label: '功能建议', value: 'feature' },
+  { label: '使用问题', value: 'question' },
+  { label: '其他', value: 'other' }
+]
+
 const productOptions = computed(() => {
   const set = new Set<string>()
   list.value.forEach((item) => {
@@ -93,6 +101,47 @@ function formatTime(value?: string) {
   return value.replace('T', ' ').replace('Z', '')
 }
 
+function getStatusLabel(status?: string) {
+  return statusOptions.find((item) => item.value === status)?.label || status || '-'
+}
+
+function getPriorityLabel(priority?: string) {
+  return priorityOptions.find((item) => item.value === priority)?.label || priority || '-'
+}
+
+function getTypeLabel(type?: string) {
+  return typeOptions.find((item) => item.value === type)?.label || type || '-'
+}
+
+function getAssigneeLabel(assigneeId?: string) {
+  if (!assigneeId) return '未分配'
+  const matched = assigneeOptions.find((item) => item.value === assigneeId)
+  return matched ? matched.label : assigneeId
+}
+
+function getProductLabel(productId?: string) {
+  if (!productId) return '-'
+  return `${productId.slice(0, 8)}...`
+}
+
+function getContentPreview(content?: string) {
+  if (!content) return '-'
+  return content.length > 48 ? `${content.slice(0, 48)}...` : content
+}
+
+function parseAttachments(value?: string) {
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value)
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => String(item))
+    }
+  } catch {
+    return [value]
+  }
+  return [value]
+}
+
 function getStatusTag(status: string) {
   if (status === 'pending') return 'warning'
   if (status === 'processing') return 'primary'
@@ -115,9 +164,8 @@ async function loadList() {
       type: typeFilter.value || undefined,
       status: statusFilter.value || undefined
     })
-  } catch (error: any) {
-    const message = error?.response?.data?.message || '获取反馈列表失败'
-    ElMessage.error(message)
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '获取反馈列表失败'))
   } finally {
     loading.value = false
   }
@@ -129,10 +177,9 @@ async function openDetail(row: FeedbackRecord) {
   currentRow.value = row
   try {
     detailRecord.value = await fetchFeedbackDetail(row.id)
-  } catch (error: any) {
+  } catch (error) {
     detailRecord.value = null
-    const message = error?.response?.data?.message || '获取反馈详情失败'
-    ElMessage.error(message)
+    ElMessage.error(getErrorMessage(error, '获取反馈详情失败'))
   } finally {
     detailLoading.value = false
   }
@@ -149,10 +196,9 @@ async function onStatusChange(row: FeedbackRecord, status: string) {
     if (detailRecord.value?.id === row.id) {
       detailRecord.value = { ...detailRecord.value, status }
     }
-  } catch (error: any) {
+  } catch (error) {
     row.status = previous
-    const message = error?.response?.data?.message || '状态更新失败'
-    ElMessage.error(message)
+    ElMessage.error(getErrorMessage(error, '状态更新失败'))
   } finally {
     actionLoading.value = false
   }
@@ -169,10 +215,9 @@ async function onPriorityChange(row: FeedbackRecord, priority: string) {
     if (detailRecord.value?.id === row.id) {
       detailRecord.value = { ...detailRecord.value, priority }
     }
-  } catch (error: any) {
+  } catch (error) {
     row.priority = previous
-    const message = error?.response?.data?.message || '优先级更新失败'
-    ElMessage.error(message)
+    ElMessage.error(getErrorMessage(error, '优先级更新失败'))
   } finally {
     actionLoading.value = false
   }
@@ -199,9 +244,8 @@ async function submitAssign() {
     if (detailVisible.value && detailRecord.value?.id === currentRow.value.id) {
       detailRecord.value = await fetchFeedbackDetail(currentRow.value.id)
     }
-  } catch (error: any) {
-    const message = error?.response?.data?.message || '分配失败'
-    ElMessage.error(message)
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '分配失败'))
   } finally {
     actionLoading.value = false
   }
@@ -262,14 +306,11 @@ onMounted(async () => {
       />
       <el-select v-model="productFilter" placeholder="产品ID" clearable style="width: 180px">
         <el-option label="全部" value="" />
-        <el-option v-for="item in productOptions" :key="item" :label="item" :value="item" />
+        <el-option v-for="item in productOptions" :key="item" :label="getProductLabel(item)" :value="item" />
       </el-select>
       <el-select v-model="typeFilter" placeholder="反馈类型" clearable style="width: 160px">
         <el-option label="全部" value="" />
-        <el-option label="bug" value="bug" />
-        <el-option label="feature" value="feature" />
-        <el-option label="question" value="question" />
-        <el-option label="other" value="other" />
+        <el-option v-for="item in typeOptions" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
       <el-select v-model="statusFilter" placeholder="处理状态" clearable style="width: 160px">
         <el-option label="全部" value="" />
@@ -278,12 +319,23 @@ onMounted(async () => {
       <el-button :loading="loading" type="primary" @click="loadList">刷新</el-button>
     </div>
 
-    <el-table :data="paginatedList" v-loading="loading || actionLoading" border stripe>
-      <el-table-column prop="id" label="反馈ID" min-width="220" />
-      <el-table-column prop="title" label="标题" min-width="180" />
-      <el-table-column prop="content" label="内容" min-width="260" show-overflow-tooltip />
-      <el-table-column prop="productId" label="产品ID" min-width="220" show-overflow-tooltip />
-      <el-table-column prop="userId" label="用户ID" min-width="220" show-overflow-tooltip />
+    <el-table :data="paginatedList" v-loading="loading || actionLoading" border stripe empty-text="暂无反馈数据">
+      <el-table-column prop="id" label="反馈ID" min-width="180" show-overflow-tooltip />
+      <el-table-column label="反馈信息" min-width="260">
+        <template #default="scope">
+          <div class="feedback-title">{{ scope.row.title || '-' }}</div>
+          <div class="feedback-sub">{{ getContentPreview(scope.row.content) }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="类型" width="110" align="center">
+        <template #default="scope">
+          <el-tag effect="plain">{{ getTypeLabel(scope.row.type) }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="产品" width="120" align="center">
+        <template #default="scope">{{ getProductLabel(scope.row.productId) }}</template>
+      </el-table-column>
+      <el-table-column prop="userId" label="用户ID" min-width="180" show-overflow-tooltip />
       <el-table-column label="状态" width="160" align="center">
         <template #default="scope">
           <el-select :model-value="scope.row.status" style="width: 130px" @change="onStatusChange(scope.row, String($event))">
@@ -298,8 +350,8 @@ onMounted(async () => {
           </el-select>
         </template>
       </el-table-column>
-      <el-table-column label="处理人ID" min-width="220" show-overflow-tooltip>
-        <template #default="scope">{{ scope.row.assigneeId || '-' }}</template>
+      <el-table-column label="处理人" min-width="140" show-overflow-tooltip>
+        <template #default="scope">{{ getAssigneeLabel(scope.row.assigneeId) }}</template>
       </el-table-column>
       <el-table-column label="提交时间" min-width="170">
         <template #default="scope">{{ formatTime(scope.row.createdAt) }}</template>
@@ -331,16 +383,21 @@ onMounted(async () => {
         <el-descriptions-item label="产品ID">{{ detailRecord?.productId || '-' }}</el-descriptions-item>
         <el-descriptions-item label="用户ID">{{ detailRecord?.userId || '-' }}</el-descriptions-item>
         <el-descriptions-item label="类型">
-          <el-tag>{{ detailRecord?.type || '-' }}</el-tag>
+          <el-tag>{{ getTypeLabel(detailRecord?.type) }}</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="getStatusTag(detailRecord?.status || '')">{{ detailRecord?.status || '-' }}</el-tag>
+          <el-tag :type="getStatusTag(detailRecord?.status || '')">{{ getStatusLabel(detailRecord?.status) }}</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="优先级">
-          <el-tag :type="getPriorityTag(detailRecord?.priority || '')">{{ detailRecord?.priority || '-' }}</el-tag>
+          <el-tag :type="getPriorityTag(detailRecord?.priority || '')">{{ getPriorityLabel(detailRecord?.priority) }}</el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="处理人ID">{{ detailRecord?.assigneeId || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="附件">{{ detailRecord?.attachments || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="处理人">{{ getAssigneeLabel(detailRecord?.assigneeId) }}</el-descriptions-item>
+        <el-descriptions-item label="附件">
+          <div v-if="parseAttachments(detailRecord?.attachments).length">
+            <div v-for="item in parseAttachments(detailRecord?.attachments)" :key="item">{{ item }}</div>
+          </div>
+          <span v-else>-</span>
+        </el-descriptions-item>
         <el-descriptions-item label="解决时间">{{ formatTime(detailRecord?.resolvedAt) }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ formatTime(detailRecord?.createdAt) }}</el-descriptions-item>
         <el-descriptions-item label="更新时间">{{ formatTime(detailRecord?.updatedAt) }}</el-descriptions-item>
@@ -391,16 +448,16 @@ onMounted(async () => {
 }
 
 .stats-card {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 18px;
 }
 
 .stat-item {
-  flex: 1;
   background: #f8fafc;
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: 10px;
+  padding: 14px;
 }
 
 .stat-label {
@@ -427,6 +484,17 @@ onMounted(async () => {
   color: #059669;
 }
 
+.feedback-title {
+  font-weight: 600;
+  color: #111827;
+}
+
+.feedback-sub {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 12px;
+}
+
 .toolbar {
   display: flex;
   gap: 10px;
@@ -439,5 +507,11 @@ onMounted(async () => {
   margin-top: 16px;
   display: flex;
   justify-content: flex-end;
+}
+
+@media (max-width: 1100px) {
+  .stats-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 </style>

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { fetchUserDetail, fetchUsers, searchUsers, updateUserStatus, type UserPage, type UserRecord } from '../api/users'
+import { getErrorMessage } from '../utils/api'
 
 const loading = ref(false)
 const detailLoading = ref(false)
@@ -25,17 +26,28 @@ const detailVisible = ref(false)
 const detailRecord = ref<UserRecord | null>(null)
 
 const statusOptions = [
-  { label: 'active', value: 'active' },
-  { label: 'inactive', value: 'inactive' },
-  { label: 'disabled', value: 'disabled' },
-  { label: 'deleted', value: 'deleted' }
+  { label: '正常', value: 'active' },
+  { label: '未激活', value: 'inactive' },
+  { label: '禁用', value: 'disabled' },
+  { label: '已删除', value: 'deleted' }
 ]
 
 const currentRows = computed(() => (mode.value === 'search' ? searchData.value : pageData.value.records))
+const stats = computed(() => ({
+  total: currentRows.value.length,
+  active: currentRows.value.filter((item) => item.status === 'active').length,
+  inactive: currentRows.value.filter((item) => item.status === 'inactive').length,
+  disabled: currentRows.value.filter((item) => item.status === 'disabled').length,
+  verified: currentRows.value.filter((item) => item.emailVerified || item.phoneVerified).length
+}))
 
 function formatTime(value?: string) {
   if (!value) return '-'
   return value.replace('T', ' ').replace('Z', '')
+}
+
+function getStatusLabel(status?: string) {
+  return statusOptions.find((item) => item.value === status)?.label || status || '-'
 }
 
 function getStatusTag(status?: string) {
@@ -43,6 +55,10 @@ function getStatusTag(status?: string) {
   if (status === 'inactive') return 'warning'
   if (status === 'disabled' || status === 'deleted') return 'danger'
   return 'info'
+}
+
+function getDisplayName(row: UserRecord) {
+  return row.nickname || row.username || row.email || row.phone || row.userId
 }
 
 async function loadList() {
@@ -62,9 +78,8 @@ async function loadList() {
     }
     totalRow.value = pageData.value.totalRow
     mode.value = 'list'
-  } catch (error: any) {
-    const message = error?.response?.data?.message || '获取用户列表失败'
-    ElMessage.error(message)
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '获取用户列表失败'))
   } finally {
     loading.value = false
   }
@@ -81,9 +96,8 @@ async function handleSearch() {
   try {
     searchData.value = await searchUsers(keyword)
     mode.value = 'search'
-  } catch (error: any) {
-    const message = error?.response?.data?.message || '搜索失败'
-    ElMessage.error(message)
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '搜索失败'))
   } finally {
     loading.value = false
   }
@@ -94,10 +108,9 @@ async function openDetail(userId: string) {
   detailLoading.value = true
   try {
     detailRecord.value = await fetchUserDetail(userId)
-  } catch (error: any) {
+  } catch (error) {
     detailRecord.value = null
-    const message = error?.response?.data?.message || '获取用户详情失败'
-    ElMessage.error(message)
+    ElMessage.error(getErrorMessage(error, '获取用户详情失败'))
   } finally {
     detailLoading.value = false
   }
@@ -116,9 +129,8 @@ async function handleStatusChange(row: UserRecord, status: string) {
     if (detailRecord.value?.userId === row.userId) {
       detailRecord.value = { ...detailRecord.value, status: updated.status }
     }
-  } catch (error: any) {
-    const message = error?.response?.data?.message || '状态更新失败'
-    ElMessage.error(message)
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '状态更新失败'))
   }
 }
 
@@ -146,6 +158,29 @@ onMounted(async () => {
       </div>
     </div>
 
+    <div class="stats-card">
+      <div class="stat-item">
+        <div class="stat-label">{{ mode === 'search' ? '搜索结果' : '当前页用户' }}</div>
+        <div class="stat-value">{{ stats.total }}</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">正常</div>
+        <div class="stat-value success">{{ stats.active }}</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">未激活</div>
+        <div class="stat-value warning">{{ stats.inactive }}</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">禁用</div>
+        <div class="stat-value danger">{{ stats.disabled }}</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">已验证</div>
+        <div class="stat-value primary">{{ stats.verified }}</div>
+      </div>
+    </div>
+
     <div class="toolbar">
       <el-input
         v-model="searchKeyword"
@@ -159,15 +194,26 @@ onMounted(async () => {
       </div>
     </div>
 
-    <el-table :data="currentRows" v-loading="loading" border stripe>
-      <el-table-column prop="userId" label="用户ID" min-width="160" />
-      <el-table-column prop="username" label="用户名" min-width="120" />
-      <el-table-column prop="nickname" label="昵称" min-width="120" />
-      <el-table-column prop="email" label="邮箱" min-width="200" />
-      <el-table-column prop="phone" label="手机号" min-width="140" />
+    <el-table :data="currentRows" v-loading="loading" border stripe empty-text="暂无用户数据">
+      <el-table-column prop="userId" label="用户ID" min-width="180" show-overflow-tooltip />
+      <el-table-column label="用户信息" min-width="220">
+        <template #default="scope">
+          <div class="user-main">{{ getDisplayName(scope.row) }}</div>
+          <div class="user-sub">{{ scope.row.username || '-' }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column prop="email" label="邮箱" min-width="220" show-overflow-tooltip />
+      <el-table-column prop="phone" label="手机号" min-width="150" show-overflow-tooltip />
       <el-table-column prop="status" label="状态" width="120" align="center">
         <template #default="scope">
-          <el-tag :type="getStatusTag(scope.row.status)">{{ scope.row.status || '-' }}</el-tag>
+          <el-tag :type="getStatusTag(scope.row.status)">{{ getStatusLabel(scope.row.status) }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="验证状态" width="120" align="center">
+        <template #default="scope">
+          <el-tag :type="scope.row.emailVerified || scope.row.phoneVerified ? 'success' : 'info'">
+            {{ scope.row.emailVerified || scope.row.phoneVerified ? '已验证' : '未验证' }}
+          </el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="lastLoginAt" label="最后登录" min-width="170">
@@ -202,11 +248,12 @@ onMounted(async () => {
       <el-skeleton :rows="8" animated v-if="detailLoading" />
       <el-descriptions v-else :column="1" border>
         <el-descriptions-item label="用户ID">{{ detailRecord?.userId || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="展示名称">{{ detailRecord ? getDisplayName(detailRecord) : '-' }}</el-descriptions-item>
         <el-descriptions-item label="用户名">{{ detailRecord?.username || '-' }}</el-descriptions-item>
         <el-descriptions-item label="昵称">{{ detailRecord?.nickname || '-' }}</el-descriptions-item>
         <el-descriptions-item label="邮箱">{{ detailRecord?.email || '-' }}</el-descriptions-item>
         <el-descriptions-item label="手机号">{{ detailRecord?.phone || '-' }}</el-descriptions-item>
-        <el-descriptions-item label="状态">{{ detailRecord?.status || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{ getStatusLabel(detailRecord?.status) }}</el-descriptions-item>
         <el-descriptions-item label="邮箱已验证">{{ detailRecord?.emailVerified ? '是' : '否' }}</el-descriptions-item>
         <el-descriptions-item label="手机号已验证">{{ detailRecord?.phoneVerified ? '是' : '否' }}</el-descriptions-item>
         <el-descriptions-item label="最后登录时间">{{ formatTime(detailRecord?.lastLoginAt) }}</el-descriptions-item>
@@ -238,6 +285,47 @@ onMounted(async () => {
   color: #6b7280;
 }
 
+.stats-card {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.stat-item {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 14px;
+}
+
+.stat-label {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.stat-value {
+  margin-top: 8px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.stat-value.success {
+  color: #059669;
+}
+
+.stat-value.warning {
+  color: #d97706;
+}
+
+.stat-value.danger {
+  color: #dc2626;
+}
+
+.stat-value.primary {
+  color: #2563eb;
+}
+
 .toolbar {
   display: flex;
   justify-content: space-between;
@@ -255,5 +343,22 @@ onMounted(async () => {
   margin-top: 18px;
   display: flex;
   justify-content: flex-end;
+}
+
+.user-main {
+  font-weight: 600;
+  color: #111827;
+}
+
+.user-sub {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+@media (max-width: 1100px) {
+  .stats-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 </style>
