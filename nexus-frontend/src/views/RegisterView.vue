@@ -2,6 +2,8 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { register, sendCode } from '../api/auth'
+import { getErrorMessage } from '../utils/api'
 
 const router = useRouter()
 const registerType = ref<'email' | 'mobile'>('email')
@@ -37,7 +39,11 @@ function sendCode() {
       codeCountdown.value -= 1
       if (codeCountdown.value <= 0) clearInterval(timer)
     }, 1000)
-  }, 400)
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '验证码发送失败'))
+  } finally {
+    codeSending.value = false
+  }
 }
 
 function handleRegister() {
@@ -67,7 +73,11 @@ function handleRegister() {
     loading.value = false
     ElMessage.success('注册成功，请登录')
     router.push('/login')
-  }, 600)
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '注册失败'))
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 

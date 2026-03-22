@@ -2,21 +2,19 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { login } from '../api/auth'
+import { DEV_LOGIN_IDENTITY, DEV_LOGIN_PASSWORD } from '../constants/auth'
 import { useAuthStore } from '../store/modules/auth'
+import { getErrorMessage } from '../utils/api'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
 const loginType = ref<'account' | 'email'>('account')
 const loading = ref(false)
-const smsSending = ref(false)
-const smsCountdown = ref(0)
-
-const accountForm = reactive({
-  account: '',
-  password: '',
-  captcha: '',
-  remember: true
+const form = reactive({
+  identity: DEV_LOGIN_IDENTITY,
+  password: DEV_LOGIN_PASSWORD
 })
 
 const emailForm = reactive({
@@ -43,18 +41,19 @@ function handleLogin() {
   }
 
   loading.value = true
-  setTimeout(() => {
-    loading.value = false
-    authStore.setToken('mock-nexus-token')
+  try {
+    const authData = await login(payload)
+    authStore.setAuth({
+      accessToken: authData.accessToken,
+      refreshToken: authData.refreshToken,
+      user: authData.user
+    })
     ElMessage.success('登录成功')
     router.push('/dashboard')
-  }, 500)
-}
-
-function sendEmailCode() {
-  if (!emailForm.email) {
-    ElMessage.warning('请先输入邮箱')
-    return
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, '登录失败'))
+  } finally {
+    loading.value = false
   }
   if (smsCountdown.value > 0 || smsSending.value) return
 
@@ -86,48 +85,16 @@ function sendEmailCode() {
         </div>
       </template>
 
-        <el-tabs v-model="loginType" class="mb-16">
-          <el-tab-pane label="账号密码" name="account" />
-          <el-tab-pane label="邮箱验证码" name="email" />
-        </el-tabs>
-
-        <el-form v-if="loginType === 'account'" label-position="top">
-          <el-form-item label="账号">
-            <el-input v-model="accountForm.account" placeholder="请输入账号/手机号/邮箱" clearable />
-          </el-form-item>
-          <el-form-item label="密码">
-            <el-input v-model="accountForm.password" type="password" show-password placeholder="请输入密码" />
-          </el-form-item>
-          <el-form-item label="图形验证码">
-            <div class="inline-row">
-              <el-input v-model="accountForm.captcha" placeholder="请输入验证码" />
-              <div class="captcha-mock">A7K9</div>
-            </div>
-          </el-form-item>
-          <div class="inline-row between mb-16">
-            <el-checkbox v-model="accountForm.remember">7 天内免登录</el-checkbox>
-            <el-button link type="primary">忘记密码</el-button>
-          </div>
-        </el-form>
-
-        <el-form v-else label-position="top">
-          <el-form-item label="邮箱">
-            <el-input v-model="emailForm.email" placeholder="请输入邮箱" clearable />
-          </el-form-item>
-          <el-form-item label="邮箱验证码">
-            <div class="inline-row">
-              <el-input v-model="emailForm.code" placeholder="请输入 6 位验证码" />
-              <el-button :loading="smsSending" :disabled="smsCountdown > 0" @click="sendEmailCode">
-                {{ smsCountdown > 0 ? `${smsCountdown}s 后重试` : '发送验证码' }}
-              </el-button>
-            </div>
-          </el-form-item>
-          <el-checkbox v-model="emailForm.agree" class="mb-16">
-            已阅读并同意《服务协议》《隐私政策》
-          </el-checkbox>
-        </el-form>
-
+      <el-form label-position="top" @submit.prevent="handleLogin">
+        <el-form-item label="邮箱或手机号">
+          <el-input v-model="form.identity" placeholder="请输入邮箱或手机号" clearable />
+        </el-form-item>
+        <el-form-item label="密码">
+          <el-input v-model="form.password" type="password" show-password placeholder="请输入密码" />
+        </el-form-item>
         <el-button type="primary" class="submit-btn" :loading="loading" @click="handleLogin">登录</el-button>
+
+      <div class="dev-hint">开发环境已预置测试账号和密码，启动后点击登录即可直接进入页面检查。</div>
 
       <div class="bottom-actions">
         <el-button link type="primary" @click="router.push('/register')">注册账号</el-button>
@@ -194,6 +161,13 @@ function sendEmailCode() {
 
 .submit-btn {
   width: 100%;
+}
+
+.dev-hint {
+  margin-top: 12px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .bottom-actions {

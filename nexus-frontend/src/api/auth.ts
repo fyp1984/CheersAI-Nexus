@@ -1,4 +1,6 @@
-import request, { type ApiResponse } from '../utils/request'
+import request from '../utils/request'
+import type { AuthResponse, UserInfo } from '../types/auth'
+import { unwrapApiData } from '../utils/api'
 
 export type SendCodeRequest = {
   email?: string
@@ -20,36 +22,32 @@ export type LoginRequest = {
   password: string
 }
 
-export type UserInfo = {
-  id: string
-  email?: string
-  phone?: string
-  username?: string
-  nickname?: string
-  avatarUrl?: string
-}
-
-export type AuthResponse = {
-  accessToken: string
-  refreshToken: string
-  idToken: string
-  expiresIn: number
-  tokenType: string
-  user: UserInfo
-}
-
 export async function sendCode(payload: SendCodeRequest) {
-  return request.post<ApiResponse<null>>('/api/v1/auth/send-code', payload, { skipAuth: true })
+  const response = await request.post('/api/v1/auth/send-code', payload, { skipAuth: true })
+  return unwrapApiData<null>(response.data)
 }
 
 export async function register(payload: RegisterRequest) {
-  return request.post<ApiResponse<AuthResponse>>('/api/v1/auth/register', payload, { skipAuth: true })
+  const response = await request.post('/api/v1/auth/register', payload, { skipAuth: true })
+  return unwrapApiData<AuthResponse>(response.data)
 }
 
 export async function login(payload: LoginRequest) {
-  return request.post<ApiResponse<AuthResponse>>('/api/v1/auth/login', payload, { skipAuth: true })
+  const response = await request.post('/api/v1/auth/login', payload, { skipAuth: true })
+  return unwrapApiData<AuthResponse>(response.data)
 }
 
 export async function logout() {
-  return request.post<ApiResponse<null>>('/api/v1/auth/logout')
+  const response = await request.post('/api/v1/auth/logout')
+  return unwrapApiData<null>(response.data)
+}
+
+export async function refreshAuthToken() {
+  const response = await request.post('/api/v1/auth/refresh')
+  return unwrapApiData<AuthResponse>(response.data)
+}
+
+export async function fetchCurrentUser() {
+  const response = await request.get('/api/v1/auth/me')
+  return unwrapApiData<UserInfo>(response.data)
 }
