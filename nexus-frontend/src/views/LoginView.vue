@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -10,36 +10,34 @@ import { getErrorMessage } from '../utils/api'
 const router = useRouter()
 const authStore = useAuthStore()
 
+const loginType = ref<'account' | 'email'>('account')
 const loading = ref(false)
 const form = reactive({
   identity: DEV_LOGIN_IDENTITY,
   password: DEV_LOGIN_PASSWORD
 })
 
-function buildLoginPayload() {
-  const identity = form.identity.trim()
-  if (!identity) {
-    return null
-  }
+const emailForm = reactive({
+  email: '',
+  code: '',
+  agree: true
+})
 
-  const isEmail = identity.includes('@')
-  if (isEmail) {
-    return { email: identity, password: form.password }
-  }
-
-  return { phone: identity, password: form.password }
-}
-
-async function handleLogin() {
-  if (!form.identity || !form.password) {
-    ElMessage.warning('请输入邮箱或手机号及密码')
-    return
-  }
-
-  const payload = buildLoginPayload()
-  if (!payload) {
-    ElMessage.warning('请输入有效的邮箱或手机号')
-    return
+function handleLogin() {
+  if (loginType.value === 'account') {
+    if (!accountForm.account || !accountForm.password || !accountForm.captcha) {
+      ElMessage.warning('请填写账号登录所需信息')
+      return
+    }
+  } else {
+    if (!emailForm.email || !emailForm.code) {
+      ElMessage.warning('请填写邮箱登录所需信息')
+      return
+    }
+    if (!emailForm.agree) {
+      ElMessage.warning('请先同意服务协议与隐私政策')
+      return
+    }
   }
 
   loading.value = true
@@ -57,6 +55,20 @@ async function handleLogin() {
   } finally {
     loading.value = false
   }
+  if (smsCountdown.value > 0 || smsSending.value) return
+
+  smsSending.value = true
+  setTimeout(() => {
+    smsSending.value = false
+    smsCountdown.value = 60
+    ElMessage.success('验证码已发送（模拟）')
+    const timer = setInterval(() => {
+      smsCountdown.value -= 1
+      if (smsCountdown.value <= 0) {
+        clearInterval(timer)
+      }
+    }, 1000)
+  }, 400)
 }
 </script>
 
@@ -67,8 +79,9 @@ async function handleLogin() {
         <div class="card-header">
           <div>
             <div class="header-title">登录</div>
-            <div class="header-subtitle">邮箱或手机号登录 Nexus 运营平台</div>
+            <div class="header-subtitle">进入 CheersAI Nexus 运营管理平台</div>
           </div>
+          <el-tag type="danger">P0</el-tag>
         </div>
       </template>
 
@@ -80,7 +93,6 @@ async function handleLogin() {
           <el-input v-model="form.password" type="password" show-password placeholder="请输入密码" />
         </el-form-item>
         <el-button type="primary" class="submit-btn" :loading="loading" @click="handleLogin">登录</el-button>
-      </el-form>
 
       <div class="dev-hint">开发环境已预置测试账号和密码，启动后点击登录即可直接进入页面检查。</div>
 
@@ -124,6 +136,29 @@ async function handleLogin() {
   font-size: 13px;
 }
 
+.inline-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.inline-row.between {
+  justify-content: space-between;
+}
+
+.captcha-mock {
+  min-width: 96px;
+  height: 40px;
+  border-radius: 8px;
+  border: 1px dashed #c7d2fe;
+  color: #1d4ed8;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fbff;
+}
+
 .submit-btn {
   width: 100%;
 }
@@ -139,5 +174,9 @@ async function handleLogin() {
   margin-top: 12px;
   display: flex;
   justify-content: flex-end;
+}
+
+.mb-16 {
+  margin-bottom: 16px;
 }
 </style>
