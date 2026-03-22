@@ -1,103 +1,73 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { register, sendCode } from '../api/auth'
 
 const router = useRouter()
-const registerType = ref<'email' | 'phone'>('email')
+const registerType = ref<'email' | 'mobile'>('email')
 const loading = ref(false)
 const codeSending = ref(false)
 const codeCountdown = ref(0)
 
 const form = reactive({
-  username: '',
+  nickname: '',
   email: '',
-  phone: '',
-  code: '',
+  mobile: '',
+  verifyCode: '',
   password: '',
   confirmPassword: '',
+  inviteCode: '',
   agree: true
 })
 
-async function handleSendCode() {
-  const target = registerType.value === 'email' ? form.email.trim() : form.phone.trim()
+function sendCode() {
+  const target = registerType.value === 'email' ? form.email : form.mobile
   if (!target) {
     ElMessage.warning(registerType.value === 'email' ? '请先输入邮箱' : '请先输入手机号')
     return
   }
-
-  if (codeSending.value || codeCountdown.value > 0) {
-    return
-  }
+  if (codeSending.value || codeCountdown.value > 0) return
 
   codeSending.value = true
-  try {
-    await sendCode(
-      registerType.value === 'email'
-        ? { email: target, purpose: 'register' }
-        : { phone: target, purpose: 'register' }
-    )
-    ElMessage.success('验证码已发送')
+  setTimeout(() => {
+    codeSending.value = false
     codeCountdown.value = 60
+    ElMessage.success('验证码已发送（模拟）')
     const timer = setInterval(() => {
       codeCountdown.value -= 1
-      if (codeCountdown.value <= 0) {
-        clearInterval(timer)
-      }
+      if (codeCountdown.value <= 0) clearInterval(timer)
     }, 1000)
-  } catch (error: any) {
-    const message = error?.response?.data?.message || '验证码发送失败'
-    ElMessage.error(message)
-  } finally {
-    codeSending.value = false
-  }
+  }, 400)
 }
 
-async function handleRegister() {
-  if (!form.username || !form.password || !form.confirmPassword || !form.code) {
+function handleRegister() {
+  if (!form.nickname || !form.password || !form.confirmPassword || !form.verifyCode) {
     ElMessage.warning('请完整填写注册信息')
     return
   }
-
-  if (registerType.value === 'email' && !form.email.trim()) {
+  if (registerType.value === 'email' && !form.email) {
     ElMessage.warning('请输入邮箱')
     return
   }
-
-  if (registerType.value === 'phone' && !form.phone.trim()) {
+  if (registerType.value === 'mobile' && !form.mobile) {
     ElMessage.warning('请输入手机号')
     return
   }
-
   if (form.password !== form.confirmPassword) {
     ElMessage.error('两次输入密码不一致')
     return
   }
-
   if (!form.agree) {
     ElMessage.warning('请先同意服务协议与隐私政策')
     return
   }
 
   loading.value = true
-  try {
-    await register({
-      username: form.username.trim(),
-      password: form.password,
-      code: form.code.trim(),
-      ...(registerType.value === 'email'
-        ? { email: form.email.trim() }
-        : { phone: form.phone.trim() })
-    })
+  setTimeout(() => {
+    loading.value = false
     ElMessage.success('注册成功，请登录')
     router.push('/login')
-  } catch (error: any) {
-    const message = error?.response?.data?.message || '注册失败'
-    ElMessage.error(message)
-  } finally {
-    loading.value = false
-  }
+  }, 600)
 }
 </script>
 
@@ -108,46 +78,56 @@ async function handleRegister() {
         <div class="card-header">
           <div>
             <div class="header-title">注册账号</div>
-            <div class="header-subtitle">按要求提示完成邮箱/手机号注册</div>
+            <div class="header-subtitle">统一账号接入 CheersAI 全产品</div>
           </div>
+          <el-tag type="danger">P0</el-tag>
         </div>
       </template>
 
       <el-tabs v-model="registerType" class="mb-16">
         <el-tab-pane label="邮箱注册" name="email" />
-        <el-tab-pane label="手机号注册" name="phone" />
+        <el-tab-pane label="手机号注册" name="mobile" />
       </el-tabs>
 
       <el-form label-position="top">
-        <el-form-item label="用户名">
-          <el-input v-model="form.username" placeholder="请输入用户名" clearable />
+        <el-form-item label="用户昵称">
+          <el-input v-model="form.nickname" placeholder="请输入用户昵称" clearable />
         </el-form-item>
 
         <el-form-item :label="registerType === 'email' ? '邮箱' : '手机号'">
           <el-input
             v-if="registerType === 'email'"
             v-model="form.email"
-            placeholder="请输入邮箱"
+            placeholder="请输入常用邮箱"
             clearable
           />
-          <el-input v-else v-model="form.phone" placeholder="请输入手机号" clearable />
+          <el-input
+            v-else
+            v-model="form.mobile"
+            placeholder="请输入手机号"
+            clearable
+          />
         </el-form-item>
 
         <el-form-item :label="registerType === 'email' ? '邮箱验证码' : '短信验证码'">
           <div class="inline-row">
-            <el-input v-model="form.code" placeholder="请输入 6 位验证码" />
-            <el-button :loading="codeSending" :disabled="codeCountdown > 0" @click="handleSendCode">
+            <el-input v-model="form.verifyCode" placeholder="请输入 6 位验证码" />
+            <el-button :loading="codeSending" :disabled="codeCountdown > 0" @click="sendCode">
               {{ codeCountdown > 0 ? `${codeCountdown}s 后重试` : '发送验证码' }}
             </el-button>
           </div>
         </el-form-item>
 
         <el-form-item label="登录密码">
-          <el-input v-model="form.password" type="password" show-password placeholder="请输入密码" />
+          <el-input v-model="form.password" type="password" show-password placeholder="8-20 位，建议字母+数字+符号" />
         </el-form-item>
 
         <el-form-item label="确认密码">
-          <el-input v-model="form.confirmPassword" type="password" show-password placeholder="请再次输入密码" />
+          <el-input v-model="form.confirmPassword" type="password" show-password placeholder="请再次输入登录密码" />
+        </el-form-item>
+
+        <el-form-item label="邀请码（可选）">
+          <el-input v-model="form.inviteCode" placeholder="用于内测或企业邀请场景" clearable />
         </el-form-item>
 
         <el-checkbox v-model="form.agree" class="mb-16">已阅读并同意《服务协议》《隐私政策》</el-checkbox>
