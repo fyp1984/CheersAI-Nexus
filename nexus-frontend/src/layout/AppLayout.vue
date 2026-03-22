@@ -1,6 +1,8 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { computed } from 'vue'
+import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
+import { logout } from '../api/auth'
 import { useAuthStore } from '../store/modules/auth'
 
 const route = useRoute()
@@ -21,9 +23,16 @@ const menus = [
   { index: '/system/config', label: '系统配置' }
 ]
 
-function handleLogout() {
+async function handleLogout() {
+  // 先清理本地登录态并跳转，避免被后端异常阻塞退出体验
   authStore.clearToken()
-  router.push('/login')
+  await router.replace('/login')
+
+  try {
+    await logout()
+  } catch {
+    ElMessage.warning('退出请求失败，已清理本地登录态')
+  }
 }
 </script>
 

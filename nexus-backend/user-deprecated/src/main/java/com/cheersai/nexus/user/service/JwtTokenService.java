@@ -1,6 +1,6 @@
 package com.cheersai.nexus.user.service;
 
-import com.cheersai.nexus.model.usermanagement.User;
+import com.cheersai.nexus.common.model.usermanagement.User;
 
 /**
  * JWT Token服务接口
