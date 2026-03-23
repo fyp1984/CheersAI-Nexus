@@ -11,6 +11,7 @@ import com.cheersai.nexus.auth.repository.TokenRepository;
 import com.cheersai.nexus.auth.service.AuthService;
 import com.cheersai.nexus.auth.util.JwtUtil;
 import com.cheersai.nexus.common.model.usermanagement.User;
+import com.mybatisflex.core.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+
+import static com.cheersai.nexus.common.model.usermanagement.table.UserTableDef.USER;
 
 @Slf4j
 @Service
@@ -70,8 +73,10 @@ public class AuthServiceImpl implements AuthService {
         // 检查用户是否已存在
         if (request.getEmail() != null) {
             var existingUser = userMapper.selectListByQuery(
-                    com.mybatisflex.core.query.QueryWrapper.create()
-                            .where(User::getEmail).eq(request.getEmail())
+                    QueryWrapper.create()
+                            .select()
+                            .from(USER)
+                            .where(USER.EMAIL.eq(request.getEmail()))
             );
             if (existingUser != null && !existingUser.isEmpty()) {
                 throw new RuntimeException("该邮箱已被注册");
@@ -80,7 +85,7 @@ public class AuthServiceImpl implements AuthService {
 
         if (request.getPhone() != null) {
             var existingUser = userMapper.selectListByQuery(
-                    com.mybatisflex.core.query.QueryWrapper.create()
+                    QueryWrapper.create()
                             .where(User::getPhone).eq(request.getPhone())
             );
             if (existingUser != null && !existingUser.isEmpty()) {
@@ -119,7 +124,7 @@ public class AuthServiceImpl implements AuthService {
         // 根据登录方式查找用户
         if (request.getEmail() != null) {
             var users = userMapper.selectListByQuery(
-                    com.mybatisflex.core.query.QueryWrapper.create()
+                    QueryWrapper.create()
                             .where(User::getEmail).eq(request.getEmail())
             );
             if (users != null && users.isEmpty()) {
@@ -131,7 +136,7 @@ public class AuthServiceImpl implements AuthService {
             }
         } else if (request.getPhone() != null) {
             var users = userMapper.selectListByQuery(
-                    com.mybatisflex.core.query.QueryWrapper.create()
+                    QueryWrapper.create()
                             .where(User::getPhone).eq(request.getPhone())
             );
             if (users != null && users.isEmpty()) {
@@ -193,11 +198,11 @@ public class AuthServiceImpl implements AuthService {
 
         // 查询用户
         var users = userMapper.selectListByQuery(
-                com.mybatisflex.core.query.QueryWrapper.create()
+                QueryWrapper.create()
                         .where(User::getUserId).eq(userId)
         );
 
-        if (users.isEmpty()) {
+        if (users == null || users.isEmpty()) {
             throw new RuntimeException("用户不存在");
         }
 
@@ -243,7 +248,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 查找用户
         var users = userMapper.selectListByQuery(
-                com.mybatisflex.core.query.QueryWrapper.create()
+                QueryWrapper.create()
                         .where(type.equals("email") ? User::getEmail : User::getPhone).eq(target)
         );
 
@@ -313,7 +318,7 @@ public class AuthServiceImpl implements AuthService {
      * 保存审计日志
      */
     private void saveAuditLog(String userId, String action, String ipAddress,
-                               String userAgent, boolean success, String details) {
+                              String userAgent, boolean success, String details) {
         AuditLog auditLog = AuditLog.builder()
                 .userId(userId)
                 .action(action)

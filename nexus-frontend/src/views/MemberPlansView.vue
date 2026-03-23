@@ -492,13 +492,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, ElDescriptions } from 'element-plus'
 import { Setting } from '@element-plus/icons-vue'
+import * as membershipApi from '../api/membership'
+import type { PlanDetailDTO, PlanCreateDTO, PlanUpdateDTO, UserSubscriptionDTO, SubscriptionAuditLog } from '../api/membership'
 
 // loading
 const loading = ref(false)
 const logLoading = ref(false)
+
+// API types matching backend
+interface PlanListItem extends PlanDetailDTO {
+  createTime?: string
+  duration?: number
+}
 
 // 分页相关
 const currentPage = ref(1)
@@ -518,16 +526,31 @@ const logDateRange = ref<Date[]>([])
 // 选中
 const selectedRows = ref([])
 
-// mock 数据 (补充月/年价格、审批状态)
-const list = ref([
-  { id: 'M001', name: '基础月度会员', priceMonthly: 19, priceYearly: 199, currency: 'CNY', duration: 30, status: 'enabled', approveStatus: 'approved', createTime: '2026-03-18' },
-  { id: 'M002', name: '高级月度会员', priceMonthly: 49, priceYearly: 499, currency: 'CNY', duration: 30, status: 'enabled', approveStatus: 'approved', createTime: '2026-03-17' },
-  { id: 'M003', name: '基础季度会员', priceMonthly: 0, priceYearly: 55, currency: 'CNY', duration: 90, status: 'enabled', approveStatus: 'approved', createTime: '2026-03-16' },
-  { id: 'M004', name: '高级季度会员', priceMonthly: 0, priceYearly: 139, currency: 'CNY', duration: 90, status: 'enabled', approveStatus: 'approved', createTime: '2026-03-15' },
-  { id: 'M005', name: '基础年度会员', priceMonthly: 0, priceYearly: 199, currency: 'CNY', duration: 365, status: 'enabled', approveStatus: 'approved', createTime: '2026-03-14' },
-  { id: 'M006', name: '高级年度会员', priceMonthly: 0, priceYearly: 499, currency: 'CNY', duration: 365, status: 'disabled', approveStatus: 'approved', createTime: '2026-03-13' },
-  { id: 'M007', name: '终身会员', priceMonthly: 0, priceYearly: 1999, currency: 'CNY', duration: 9999, status: 'disabled', approveStatus: 'pending', createTime: '2026-03-12' }
-])
+// 会员计划列表数据
+const list = ref<PlanListItem[]>([])
+
+// 加载会员计划列表
+const loadPlanList = async () => {
+  loading.value = true
+  try {
+    const data = await membershipApi.fetchPlanList()
+    list.value = data.map(item => ({
+      ...item,
+      createTime: item.createdAt ? item.createdAt.split('T')[0] : '',
+      duration: 30, // 默认30天，可根据业务需求调整
+      status: item.status === 'active' ? 'enabled' : 'disabled'
+    }))
+  } catch (error: any) {
+    ElMessage.error(error.message || '加载会员计划列表失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 页面加载时获取数据
+onMounted(() => {
+  loadPlanList()
+})
 
 // 操作日志mock
 const logList = ref([
@@ -683,34 +706,50 @@ const openDialog = (row?: any) => {
 }
 
 // 保存会员方案并提交审批
-const handleSave = () => {
+const handleSave = async () => {
   // 表单验证
-  formRef.value.validate((valid: boolean) => {
-    if (!valid) return
-    // 记录操作日志（埋点）
-    const logData = {
-      operatorName: '运营小王', // 实际从登录信息获取
-      operateType: form.id ? 'update' : 'create',
-      operateTypeDesc: form.id ? '方案编辑' : '方案创建',
-      targetName: form.name + (form.id ? `(${form.id})` : ''),
-      operateContent: form.id ? `编辑${form.name}方案，月付${form.priceMonthly}元，年付${form.priceYearly}元` : `创建${form.name}方案，月付${form.priceMonthly}元，年付${form.priceYearly}元`,
-      beforeData: form.id ? list.value.find(item => item.id === form.id) : null,
-      afterData: { ...form },
-      remark: form.approveRemark || '无'
+  const valid = await formRef.value.validate().catch(() => false)
+  if (!valid) return
+  
+  try {
+    loading.value = true
+    
+    if (form.id) {
+      // 编辑模式 - 调用更新API
+      const updateData: PlanUpdateDTO = {
+        name: form.name,
+        description: form.desc,
+        priceMonthly: Number(form.priceMonthly),
+        priceYearly: Number(form.priceYearly),
+        currency: form.currency,
+        status: form.status === 'enabled' ? 'active' : 'disabled',
+        applyRemark: form.approveRemark
+      }
+      await membershipApi.updatePlan(form.code, updateData)
+      ElMessage.success('编辑成功，已提交审批')
+    } else {
+      // 新建模式 - 调用创建API
+      const createData: PlanCreateDTO = {
+        code: `plan_${Date.now()}`, // 生成唯一编码
+        name: form.name,
+        description: form.desc,
+        priceMonthly: Number(form.priceMonthly),
+        priceYearly: Number(form.priceYearly),
+        currency: form.currency,
+        status: form.status === 'enabled' ? 'active' : 'disabled'
+      }
+      await membershipApi.createPlan(createData)
+      ElMessage.success('创建成功')
     }
-    recordOperateLog(logData) // 记录日志
-    // TODO: 调用新增/编辑会员方案并提交审批接口
-    ElMessage.success(form.id ? '编辑成功，已提交审批' : '创建成功，已提交审批')
+    
     dialogVisible.value = false
-    // 模拟刷新列表
-    if (!form.id) {
-      list.value.push({
-        ...form,
-        id: `M${list.value.length + 100}`,
-        createTime: new Date().toLocaleDateString().replace(/\//g, '-')
-      })
-    }
-  })
+    // 刷新列表
+    await loadPlanList()
+  } catch (error: any) {
+    ElMessage.error(error.message || '操作失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 // 状态切换（需审批通过才能修改）
@@ -732,32 +771,31 @@ const handleStatusChange = (row: any) => {
 }
 
 // 删除会员方案
-const handleDelete = (row: any) => {
-  ElMessageBox.confirm(
-    '确认删除该会员方案吗？删除后将无法恢复',
-    '删除确认',
-    {
-      confirmButtonText: '确认删除',
-      cancelButtonText: '取消',
-      type: 'warning'
+const handleDelete = async (row: any) => {
+  try {
+    await ElMessageBox.confirm(
+      '确认删除该会员方案吗？删除后将无法恢复',
+      '删除确认',
+      {
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    loading.value = true
+    await membershipApi.deletePlan(row.code)
+    ElMessage.success('删除成功')
+    
+    // 刷新列表
+    await loadPlanList()
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.message || '删除失败')
     }
-  ).then(() => {
-    // 记录操作日志
-    const logData = {
-      operatorName: '运营小王',
-      operateType: 'delete',
-      operateTypeDesc: '删除方案',
-      targetName: `${row.name}(${row.id})`,
-      operateContent: `删除${row.name}会员方案`,
-      beforeData: { ...row },
-      afterData: null,
-      remark: '产品下线'
-    }
-    recordOperateLog(logData)
-    // TODO: 调用删除接口
-    list.value = list.value.filter(item => item.id !== row.id)
-    ElMessage.success('删除成功，已记录审计日志')
-  })
+  } finally {
+    loading.value = false
+  }
 }
 
 // 批量选择
@@ -871,49 +909,62 @@ const openUserAdjustDialog = () => {
 }
 
 // 搜索用户
-const searchUser = () => {
+const searchUser = async () => {
   if (!adjustForm.userKey) {
     ElMessage.warning('请输入用户ID或邮箱')
     return
   }
-  // TODO: 调用用户搜索接口
-  adjustForm.userInfo = {
-    id: '10001',
-    email: 'user@example.com',
-    currentPlan: '基础月度会员(M001)',
-    planExpire: '2026-04-18'
+  
+  try {
+    // 调用获取用户订阅信息接口
+    const userSub = await membershipApi.fetchUserSubscription(adjustForm.userKey)
+    
+    adjustForm.userInfo = {
+      id: userSub.userId,
+      email: userSub.email || '',
+      currentPlan: userSub.currentPlanName || 'Free',
+      currentPlanCode: userSub.currentPlanCode,
+      planExpire: userSub.planExpire || '永久',
+      subscriptionId: userSub.subscriptionId
+    }
+    ElMessage.success('用户搜索成功')
+  } catch (error: any) {
+    ElMessage.error(error.message || '用户不存在')
   }
-  ElMessage.success('用户搜索成功')
 }
 
 // 确认调整用户会员（US-005核心）
-const handleUserAdjust = () => {
-  adjustFormRef.value.validate((valid: boolean) => {
-    if (!valid) return
-    // 记录操作日志（审计要求）
-    const targetPlan = list.value.find(item => item.id === adjustForm.targetPlan)
-    const logData = {
-      operatorName: '运营小王',
-      operateType: 'user_adjust',
-      operateTypeDesc: '用户调整',
-      targetName: `用户(${adjustForm.userInfo.id})`,
-      operateContent: `将用户${adjustForm.userInfo.id}的会员从${adjustForm.userInfo.currentPlan}调整为${targetPlan.name}，有效期${adjustForm.expireDays}天`,
-      beforeData: { ...adjustForm.userInfo },
-      afterData: {
-        ...adjustForm.userInfo,
-        currentPlan: targetPlan.name,
-        planExpire: adjustForm.expireDays === 0 ? '永久' : new Date(Date.now() + adjustForm.expireDays * 24 * 60 * 60 * 1000).toLocaleDateString().replace(/\//g, '-')
-      },
-      remark: adjustForm.adjustReason
-    }
-    recordOperateLog(logData)
-    // TODO: 调用手动调整用户会员接口（/api/v1/users/:id/subscription/adjust）
-    ElMessage.success('用户会员调整成功，已实时生效并记录审计日志')
+const handleUserAdjust = async () => {
+  const valid = await adjustFormRef.value.validate().catch(() => false)
+  if (!valid) return
+  
+  try {
+    loading.value = true
+    
+    // 获取目标计划信息
+    const targetPlan = list.value.find(item => item.code === adjustForm.targetPlan)
+    
+    // 调用手动调整用户会员接口
+    await membershipApi.adjustUserSubscription(adjustForm.userInfo.id, {
+      planCode: adjustForm.targetPlan,
+      expireDays: Number(adjustForm.expireDays),
+      reason: adjustForm.adjustReason
+    })
+    
+    ElMessage.success('用户会员调整成功，已实时生效')
     userAdjustDialogVisible.value = false
-    // 模拟添加日志
-    logList.value.unshift(logData)
-    logTotal.value = logList.value.length
-  })
+    
+    // 重置表单
+    adjustForm.userKey = ''
+    adjustForm.userInfo = null
+    adjustForm.targetPlan = ''
+    adjustForm.expireDays = ''
+    adjustForm.adjustReason = ''
+  } catch (error: any) {
+    ElMessage.error(error.message || '调整失败')
+  } finally {
+    loading.value = false
+  }
 }
 
 // 下拉菜单操作处理

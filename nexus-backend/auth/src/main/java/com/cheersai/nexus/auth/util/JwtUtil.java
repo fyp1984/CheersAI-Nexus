@@ -79,7 +79,7 @@ public class JwtUtil {
 
         return Jwts.builder()
                 .claims(claims)
-                .subject(userId)
+                .subject(String.valueOf(userId))
                 .issuer(jwtProperties.getIssuer())
                 .audience().add(jwtProperties.getAudience()).and()
                 .issuedAt(new Date())
@@ -94,7 +94,7 @@ public class JwtUtil {
     public String generateRefreshToken(String userId) {
         return Jwts.builder()
                 .claim("type", "refresh")
-                .subject(userId)
+                .subject(String.valueOf(userId))
                 .issuer(jwtProperties.getIssuer())
                 .audience().add(jwtProperties.getAudience()).and()
                 .issuedAt(new Date())
@@ -115,7 +115,7 @@ public class JwtUtil {
 
         return Jwts.builder()
                 .claims(claims)
-                .subject(userId)
+                .subject(String.valueOf(userId))
                 .issuer(jwtProperties.getIssuer())
                 .audience().add(jwtProperties.getAudience()).and()
                 .issuedAt(new Date())

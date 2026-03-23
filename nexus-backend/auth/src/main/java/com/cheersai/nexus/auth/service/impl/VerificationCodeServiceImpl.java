@@ -4,8 +4,10 @@ package com.cheersai.nexus.auth.service.impl;
 import com.cheersai.nexus.auth.entity.VerificationCode;
 import com.cheersai.nexus.auth.mapper.VerificationCodeMapper;
 import com.cheersai.nexus.auth.service.VerificationCodeService;
+import com.mybatisflex.core.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -20,7 +22,10 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class VerificationCodeServiceImpl implements VerificationCodeService {
 
-    private final VerificationCodeMapper verificationCodeMapper;
+    @Autowired
+    private VerificationCodeMapper verificationCodeMapper;
+    
+    @Autowired
     private final RedisTemplate<String, Object> redisTemplate;
 
     @Value("${app.verification.code-length:6}")
@@ -100,7 +105,7 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
 
         // 从数据库验证
         var verificationCodes = verificationCodeMapper.selectListByQuery(
-                com.mybatisflex.core.query.QueryWrapper.create()
+                QueryWrapper.create()
                         .where(VerificationCode::getTarget).eq(target)
                         .and(VerificationCode::getPurpose).eq(purpose)
                         .and(VerificationCode::getUsed).eq(false)

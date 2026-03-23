@@ -5,7 +5,7 @@ import com.cheersai.nexus.feedback.mapper.FeedbackMapper;
 import com.cheersai.nexus.feedback.service.FeedbackService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.update.UpdateChain;
-import com.mybatisflex.spring.service.impl.ServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -20,16 +20,21 @@ import static com.cheersai.nexus.feedback.entity.table.FeedbackTableDef.FEEDBACK
  * 用户反馈业务逻辑实现类
  */
 @Service
-public class FeedbackServiceImpl extends ServiceImpl<FeedbackMapper, Feedback> implements FeedbackService {
+public class FeedbackServiceImpl implements FeedbackService {
+    
+    @Autowired
+    private FeedbackMapper feedbackMapper;
 
     @Override
     public List<Feedback> getFeedbackList(String product, String type, String status) {
         QueryWrapper queryWrapper = QueryWrapper.create()
+                .select()
+                .from(FEEDBACK)
                 .where(FEEDBACK.PRODUCT_ID.eq(product, StringUtils.hasText(product)))
                 .and(FEEDBACK.TYPE.eq(type, StringUtils.hasText(type)))
                 .and(FEEDBACK.STATUS.eq(status, StringUtils.hasText(status)))
                 .orderBy(FEEDBACK.CREATED_AT.desc());
-        return this.list(queryWrapper);
+        return feedbackMapper.selectListByQuery(queryWrapper);
     }
 
     @Override

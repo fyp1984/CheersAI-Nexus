@@ -1,7 +1,6 @@
 package com.cheersai.nexus.feedback.service;
 
 import com.cheersai.nexus.feedback.entity.Feedback;
-import com.mybatisflex.core.service.IService;
 
 import java.util.List;
 import java.util.UUID;
@@ -9,7 +8,7 @@ import java.util.UUID;
 /**
  * 用户反馈业务逻辑接口
  */
-public interface FeedbackService extends IService<Feedback> {
+public interface FeedbackService{
 
     /**
      * 获取反馈列表（支持筛选，全量返回供前端分页）
