@@ -58,7 +58,7 @@ public class ProductVersionServiceImpl extends ServiceImpl<ProductVersionMapper,
 
     @Override
     public ProductVersionDetailDTO getVersionById(String id) {
-        ProductVersion version = productVersionMapper.selectOneById(parseUuid(id, "版本ID格式不正确"));
+        ProductVersion version = productVersionMapper.selectOneByQuery(QueryWrapper.create().where(PRODUCT_VERSION.ID.eq(parseUuid(id, "版本ID格式不正确"))));
         if (version == null) {
             return null;
         }
@@ -130,7 +130,7 @@ public class ProductVersionServiceImpl extends ServiceImpl<ProductVersionMapper,
 
         version.setStatus("published");
         version.setPublishedAt(LocalDateTime.now());
-        productVersionMapper.update(version);
+        productVersionMapper.updateByQuery(version, QueryWrapper.create().where(PRODUCT_VERSION.ID.eq(version.getId())));
 
         product.setCurrentVersion(version.getVersion());
         product.setUpdatedAt(LocalDateTime.now());
@@ -160,7 +160,7 @@ public class ProductVersionServiceImpl extends ServiceImpl<ProductVersionMapper,
         String beforeData = toJsonQuietly(version);
 
         version.setStatus("deprecated");
-        productVersionMapper.update(version);
+        productVersionMapper.updateByQuery(version, QueryWrapper.create().where(PRODUCT_VERSION.ID.eq(version.getId())));
 
         if (StringUtils.hasText(product.getCurrentVersion()) && product.getCurrentVersion().equals(version.getVersion())) {
             product.setCurrentVersion(null);
@@ -195,7 +195,7 @@ public class ProductVersionServiceImpl extends ServiceImpl<ProductVersionMapper,
         }
 
         String beforeData = toJsonQuietly(version);
-        productVersionMapper.deleteById(versionUuid);
+        productVersionMapper.deleteByQuery(QueryWrapper.create().where(PRODUCT_VERSION.ID.eq(versionUuid)));
 
         recordOperation(
                 product,
@@ -247,7 +247,7 @@ public class ProductVersionServiceImpl extends ServiceImpl<ProductVersionMapper,
             version.setMinVersion(dto.getMinVersion());
         }
 
-        productVersionMapper.update(version);
+        productVersionMapper.updateByQuery(version, QueryWrapper.create().where(PRODUCT_VERSION.ID.eq(version.getId())));
 
         if ("published".equals(version.getStatus())) {
             product.setCurrentVersion(version.getVersion());
@@ -315,7 +315,7 @@ public class ProductVersionServiceImpl extends ServiceImpl<ProductVersionMapper,
     }
 
     private Product requireProduct(String productId) {
-        Product product = productMapper.selectOneById(parseUuid(productId, "产品ID格式不正确"));
+        Product product = productMapper.selectOneByQuery(QueryWrapper.create().where(PRODUCT.ID.eq(parseUuid(productId, "产品ID格式不正确"))));
         if (product == null) {
             throw new ProductBusinessException(ProductErrorCode.PRODUCT_NOT_FOUND);
         }
@@ -323,7 +323,7 @@ public class ProductVersionServiceImpl extends ServiceImpl<ProductVersionMapper,
     }
 
     private ProductVersion requireVersion(String versionId) {
-        ProductVersion version = productVersionMapper.selectOneById(parseUuid(versionId, "版本ID格式不正确"));
+        ProductVersion version = productVersionMapper.selectOneByQuery(QueryWrapper.create().where(PRODUCT_VERSION.ID.eq(parseUuid(versionId, "版本ID格式不正确"))));
         if (version == null) {
             throw new ProductBusinessException(ProductErrorCode.VERSION_NOT_FOUND);
         }

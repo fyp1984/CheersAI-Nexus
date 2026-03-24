@@ -91,7 +91,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
     @Override
     public ProductDetailDTO getProductById(String id) {
-        Product product = productMapper.selectOneById(parseUuid(id, "产品ID格式不正确"));
+        Product product = productMapper.selectOneByQuery(QueryWrapper.create().select().from(PRODUCT).where(PRODUCT.ID.eq(parseUuid(id, "产品ID格式不正确"))));
         if (product == null) {
             return null;
         }
@@ -186,7 +186,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         }
 
         product.setUpdatedAt(LocalDateTime.now());
-        productMapper.update(product);
+        productMapper.updateByQuery(product, QueryWrapper.create().where(PRODUCT.ID.eq(product.getId())));
 
         recordOperation(
                 product,
@@ -208,7 +208,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         Product product = requireProduct(id);
         String beforeData = toJsonQuietly(product);
 
-        productMapper.deleteById(product.getId());
+        productMapper.deleteByQuery(QueryWrapper.create().where(PRODUCT.ID.eq(product.getId())));
 
         recordOperation(
                 product,
@@ -240,7 +240,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         for (String id : deduplicatedIds) {
             Product product = requireProduct(id);
             String beforeData = toJsonQuietly(product);
-            productMapper.deleteById(product.getId());
+            productMapper.deleteByQuery(QueryWrapper.create().where(PRODUCT.ID.eq(product.getId())));
             recordOperation(
                     product,
                     "批量删除产品",
@@ -265,7 +265,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
 
         product.setStatus(status);
         product.setUpdatedAt(LocalDateTime.now());
-        productMapper.update(product);
+        productMapper.updateByQuery(product, QueryWrapper.create().where(PRODUCT.ID.eq(product.getId())));
 
         recordOperation(
                 product,
@@ -312,7 +312,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
             throw new ProductBusinessException(ProductErrorCode.INVALID_PARAMETER, "功能配置格式错误");
         }
         product.setUpdatedAt(LocalDateTime.now());
-        productMapper.update(product);
+        productMapper.updateByQuery(product, QueryWrapper.create().where(PRODUCT.ID.eq(product.getId())));
 
         recordOperation(
                 product,
@@ -371,7 +371,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     }
 
     private Product requireProduct(String id) {
-        Product product = productMapper.selectOneById(parseUuid(id, "产品ID格式不正确"));
+        Product product = productMapper.selectOneByQuery(QueryWrapper.create().select().from(PRODUCT).where(PRODUCT.ID.eq(parseUuid(id, "产品ID格式不正确"))));
         if (product == null) {
             throw new ProductBusinessException(ProductErrorCode.PRODUCT_NOT_FOUND);
         }
