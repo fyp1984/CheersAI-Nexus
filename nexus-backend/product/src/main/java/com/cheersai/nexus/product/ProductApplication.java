@@ -10,7 +10,7 @@ import org.springframework.context.annotation.ComponentScan;
         "com.cheersai.nexus.product", 
         "com.cheersai.nexus.common"
 })
-@MapperScan
+@MapperScan("com.cheersai.nexus.product.mapper")
 public class ProductApplication {
 
     public static void main(String[] args) {

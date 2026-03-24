@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import jakarta.annotation.PostConstruct;
 
 import java.security.KeyFactory;
 import java.security.KeyPair;
@@ -44,6 +45,7 @@ public class JwtUtil {
     /**
      * 初始化 RSA 密钥对
      */
+    @PostConstruct
     public void initKeyPair() {
         try {
             if (jwtProperties.getPrivateKey() != null && !jwtProperties.getPrivateKey().isEmpty()

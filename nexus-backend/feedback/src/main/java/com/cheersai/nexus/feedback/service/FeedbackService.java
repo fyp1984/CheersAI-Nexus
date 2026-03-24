@@ -11,6 +11,11 @@ import java.util.UUID;
 public interface FeedbackService{
 
     /**
+     * 根据 ID 获取反馈详情
+     */
+    Feedback getById(UUID id);
+
+    /**
      * 获取反馈列表（支持筛选，全量返回供前端分页）
      */
     List<Feedback> getFeedbackList(String product, String type, String status);

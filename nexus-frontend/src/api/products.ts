@@ -1,7 +1,7 @@
 import request from '../utils/request'
 import { unwrapApiData } from '../utils/api'
 
-// ========== 产品相关类型 ==========
+export type ProductStatus = 'active' | 'inactive' | 'deprecated'
 
 export interface ProductDetailDTO {
   id: string
@@ -9,7 +9,7 @@ export interface ProductDetailDTO {
   code: string
   description?: string
   iconUrl?: string
-  status: 'active' | 'inactive' | 'deprecated'
+  status: ProductStatus
   currentVersion?: string
   downloadUrls?: string
   settings?: string
@@ -22,23 +22,53 @@ export interface ProductCreateDTO {
   code: string
   description?: string
   iconUrl?: string
-  status?: string
+  status?: ProductStatus
   currentVersion?: string
   downloadUrls?: string
   settings?: string
 }
 
 export interface ProductUpdateDTO {
+  code?: string
   name?: string
   description?: string
   iconUrl?: string
-  status?: string
+  status?: ProductStatus
   currentVersion?: string
   downloadUrls?: string
   settings?: string
 }
 
-// ========== 产品版本相关类型 ==========
+export interface ProductListQuery {
+  keyword?: string
+  status?: ProductStatus | ''
+  startTime?: string
+  endTime?: string
+  currentVersion?: string
+  page?: number
+  pageSize?: number
+}
+
+export interface ProductListResponseDTO {
+  items: ProductDetailDTO[]
+  total: number
+}
+
+export interface ProductBatchDeleteDTO {
+  ids: string[]
+}
+
+export interface ProductFeatureDTO {
+  key: string
+  name: string
+  desc: string
+  enabled: boolean
+  planCodes: string[]
+}
+
+export interface ProductFeatureUpdateDTO {
+  features: ProductFeatureDTO[]
+}
 
 export interface ProductVersionDetailDTO {
   id: string
@@ -67,102 +97,119 @@ export interface ProductVersionCreateDTO {
   minVersion?: string
 }
 
-// ========== 产品 API ==========
+export interface ProductVersionUpdateDTO extends ProductVersionCreateDTO {}
 
-/**
- * 获取产品列表
- */
-export async function fetchProductList() {
-  const response = await request.get('/api/v1/products')
-  return unwrapApiData<ProductDetailDTO[]>(response.data)
+export interface ProductOperationLogDTO {
+  id: string
+  productId?: string
+  productCode?: string
+  productName?: string
+  action: string
+  targetType: string
+  targetId?: string
+  content?: string
+  beforeData?: string
+  afterData?: string
+  operatorId?: string
+  operatorName?: string
+  ipAddress?: string
+  createdAt: string
 }
 
-/**
- * 获取产品详情
- */
+export interface ProductOperationLogQuery {
+  keyword?: string
+  startTime?: string
+  endTime?: string
+  page?: number
+  pageSize?: number
+}
+
+export interface ProductOperationLogPageDTO {
+  items: ProductOperationLogDTO[]
+  total: number
+}
+
+export async function fetchProductList(params: ProductListQuery) {
+  const response = await request.get('/api/v1/products', { params })
+  return unwrapApiData<ProductListResponseDTO>(response.data)
+}
+
 export async function fetchProductDetail(id: string) {
   const response = await request.get(`/api/v1/products/${id}`)
   return unwrapApiData<ProductDetailDTO>(response.data)
 }
 
-/**
- * 创建产品
- */
 export async function createProduct(data: ProductCreateDTO) {
   const response = await request.post('/api/v1/products', data)
   return unwrapApiData<null>(response.data)
 }
 
-/**
- * 更新产品
- */
 export async function updateProduct(id: string, data: ProductUpdateDTO) {
   const response = await request.put(`/api/v1/products/${id}`, data)
   return unwrapApiData<null>(response.data)
 }
 
-/**
- * 删除产品
- */
 export async function deleteProduct(id: string) {
   const response = await request.delete(`/api/v1/products/${id}`)
   return unwrapApiData<null>(response.data)
 }
 
-/**
- * 更新产品状态
- */
-export async function updateProductStatus(id: string, status: string) {
-  const response = await request.patch(`/api/v1/products/${id}/status?status=${status}`)
+export async function batchDeleteProducts(data: ProductBatchDeleteDTO) {
+  const response = await request.post('/api/v1/products/batch-delete', data)
   return unwrapApiData<null>(response.data)
 }
 
-// ========== 产品版本 API ==========
+export async function updateProductStatus(id: string, status: ProductStatus) {
+  const response = await request.patch(`/api/v1/products/${id}/status`, null, { params: { status } })
+  return unwrapApiData<null>(response.data)
+}
 
-/**
- * 获取产品的版本列表
- */
+export async function fetchProductFeatures(id: string) {
+  const response = await request.get(`/api/v1/products/${id}/features`)
+  return unwrapApiData<ProductFeatureUpdateDTO>(response.data)
+}
+
+export async function updateProductFeatures(id: string, data: ProductFeatureUpdateDTO) {
+  const response = await request.put(`/api/v1/products/${id}/features`, data)
+  return unwrapApiData<null>(response.data)
+}
+
 export async function fetchProductVersionList(productId: string) {
   const response = await request.get(`/api/v1/products/${productId}/versions`)
   return unwrapApiData<ProductVersionDetailDTO[]>(response.data)
 }
 
-/**
- * 创建产品版本
- */
 export async function createProductVersion(productId: string, data: ProductVersionCreateDTO) {
   const response = await request.post(`/api/v1/products/${productId}/versions`, data)
   return unwrapApiData<null>(response.data)
 }
 
-/**
- * 发布产品版本
- */
+export async function updateProductVersion(productId: string, versionId: string, data: ProductVersionUpdateDTO) {
+  const response = await request.put(`/api/v1/products/${productId}/versions/${versionId}`, data)
+  return unwrapApiData<null>(response.data)
+}
+
 export async function publishProductVersion(productId: string, versionId: string) {
   const response = await request.post(`/api/v1/products/${productId}/versions/${versionId}/publish`)
   return unwrapApiData<null>(response.data)
 }
 
-/**
- * 废弃产品版本
- */
 export async function deprecateProductVersion(productId: string, versionId: string) {
   const response = await request.post(`/api/v1/products/${productId}/versions/${versionId}/deprecate`)
   return unwrapApiData<null>(response.data)
 }
 
-/**
- * 删除产品版本
- */
 export async function deleteProductVersion(productId: string, versionId: string) {
   const response = await request.delete(`/api/v1/products/${productId}/versions/${versionId}`)
   return unwrapApiData<null>(response.data)
 }
 
-/**
- * 获取产品最新版本
- */
 export async function fetchLatestProductVersion(productId: string) {
   const response = await request.get(`/api/v1/products/${productId}/versions/latest`)
   return unwrapApiData<ProductVersionDetailDTO>(response.data)
+}
+
+export async function fetchProductOperationLogs(params: ProductOperationLogQuery) {
+  const response = await request.get('/api/v1/products/logs', { params })
+  return unwrapApiData<ProductOperationLogPageDTO>(response.data)
 }
