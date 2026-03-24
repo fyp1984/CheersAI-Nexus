@@ -2,10 +2,14 @@ package com.cheersai.nexus.auth.service.impl;
 
 
 import com.cheersai.nexus.auth.entity.VerificationCode;
+import com.cheersai.nexus.auth.exception.AuthBusinessException;
+import com.cheersai.nexus.auth.exception.AuthErrorCode;
 import com.cheersai.nexus.auth.mapper.VerificationCodeMapper;
 import com.cheersai.nexus.auth.service.VerificationCodeService;
+import com.mybatisflex.core.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
@@ -13,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -20,7 +25,10 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class VerificationCodeServiceImpl implements VerificationCodeService {
 
-    private final VerificationCodeMapper verificationCodeMapper;
+    @Autowired
+    private VerificationCodeMapper verificationCodeMapper;
+    
+    @Autowired
     private final RedisTemplate<String, Object> redisTemplate;
 
     @Value("${app.verification.code-length:6}")
@@ -52,7 +60,7 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
         String rateLimitKey = VERIFICATION_CODE_RATE_LIMIT_PREFIX + target;
         Boolean isLimited = redisTemplate.hasKey(rateLimitKey);
         if (isLimited) {
-            throw new RuntimeException("验证码发送过于频繁，请稍后再试");
+            throw new AuthBusinessException(AuthErrorCode.VERIFICATION_CODE_RATE_LIMIT);
         }
 
         // 生成验证码
@@ -60,12 +68,14 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
 
         // 保存验证码到数据库
         VerificationCode verificationCode = VerificationCode.builder()
+                .id(UUID.randomUUID().toString())
                 .target(target)
                 .code(code)
                 .type(type)
                 .purpose(purpose)
                 .expiresAt(LocalDateTime.now().plus(Duration.ofMillis(codeExpiration)))
                 .used(false)
+                .createdAt(LocalDateTime.now())
                 .build();
         verificationCodeMapper.insert(verificationCode);
 
@@ -100,7 +110,7 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
 
         // 从数据库验证
         var verificationCodes = verificationCodeMapper.selectListByQuery(
-                com.mybatisflex.core.query.QueryWrapper.create()
+                QueryWrapper.create()
                         .where(VerificationCode::getTarget).eq(target)
                         .and(VerificationCode::getPurpose).eq(purpose)
                         .and(VerificationCode::getUsed).eq(false)
@@ -133,16 +143,6 @@ public class VerificationCodeServiceImpl implements VerificationCodeService {
      * 标记验证码为已使用
      */
     private void markCodeAsUsed(String target, String purpose) {
-        var verificationCodes = verificationCodeMapper.selectListByQuery(
-                com.mybatisflex.core.query.QueryWrapper.create()
-                        .where(VerificationCode::getTarget).eq(target)
-                        .and(VerificationCode::getPurpose).eq(purpose)
-                        .and(VerificationCode::getUsed).eq(false)
-        );
-
-        for (VerificationCode vc : verificationCodes) {
-            vc.setUsed(true);
-            verificationCodeMapper.update(vc);
-        }
+        verificationCodeMapper.markUsedByTargetAndPurpose(target, purpose);
     }
 }

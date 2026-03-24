@@ -4,20 +4,24 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- 基础信息（无parent节点） -->
+    <!-- 基础信息 -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.5.11</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+    
     <groupId>com.cheersai.nexus</groupId>
-    <artifactId>feedback-test</artifactId>
+    <artifactId>feedback</artifactId>
     <version>1.0.0</version>
-    <name>Feedback Test Project</name>
     <packaging>jar</packaging>
 
     <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- 手动指定Spring Boot版本 -->
-        <spring-boot.version>2.7.18</spring-boot.version>
-        <mybatisflex.version>1.8.3</mybatisflex.version>
+        <spring-boot.version>3.5.11</spring-boot.version>
+        <mybatisflex.version>1.11.6</mybatisflex.version>
     </properties>
 
     <!-- 依赖管理：手动引入Spring Boot的依赖版本控制 -->
@@ -48,8 +52,8 @@
         <!-- MyBatisFlex -->
         <dependency>
             <groupId>com.mybatis-flex</groupId>
-            <artifactId>mybatis-flex-spring-boot-starter</artifactId>
-            <version>1.8.2</version>
+            <artifactId>mybatis-flex-spring-boot3-starter</artifactId>
+            <version>${mybatisflex.version}</version>
         </dependency>
 
         <!-- PostgreSQL驱动 -->
@@ -77,6 +81,24 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.cheersai.nexus</groupId>
+            <artifactId>common</artifactId>
+            <version>1.0.0</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <!-- Flyway 数据库迁移 -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>10.17.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <version>10.17.0</version>
         </dependency>
     </dependencies>
 
@@ -108,11 +130,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.13.0</version>
                 <configuration>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.target}</target>
+                    <source>17</source>
+                    <target>17</target>
                     <encoding>${project.build.sourceEncoding}</encoding>
+                    <parameters>true</parameters>
                 </configuration>
             </plugin>
         </plugins>

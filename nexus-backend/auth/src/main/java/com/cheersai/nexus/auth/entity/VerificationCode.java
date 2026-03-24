@@ -28,10 +28,8 @@ public class VerificationCode {
     private String purpose; // register, login, reset_password, bind
 
     private LocalDateTime expiresAt;
+    
+    private Boolean used;
 
-    @Builder.Default
-    private Boolean used = false;
-
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 }

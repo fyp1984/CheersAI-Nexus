@@ -2,12 +2,16 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <annotationProcessing>
+      <profile default="true" name="Default" enabled="true" />
       <profile name="Maven default annotation processors profile" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="feedback" />
+        <module name="product" />
+        <module name="membership" />
         <module name="common" />
-        <module name="user-deprecated" />
+        <module name="auditlog" />
       </profile>
       <profile name="Annotation profile for nexus-backend" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -17,19 +21,20 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" />
         </processorPath>
         <module name="user-management" />
+        <module name="auth" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="main" target="21" />
-    </bytecodeTargetLevel>
+    <bytecodeTargetLevel target="21" />
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="auditlog" options="-parameters" />
       <module name="auth" options="-parameters" />
       <module name="common" options="-parameters" />
-      <module name="main" options="-parameters" />
+      <module name="feedback" options="-parameters" />
+      <module name="membership" options="-parameters" />
       <module name="nexus-backend" options="-parameters" />
-      <module name="user-deprecated" options="-parameters" />
+      <module name="product" options="-parameters" />
       <module name="user-management" options="-parameters" />
     </option>
   </component>

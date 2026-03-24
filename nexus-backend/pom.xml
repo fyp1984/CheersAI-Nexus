@@ -14,10 +14,13 @@
 
     <!-- 子模块定义 -->
     <modules>
-        <module>user-deprecated</module>
         <module>common</module>
         <module>auth</module>
         <module>user-management</module>
+        <module>feedback</module>
+        <module>membership</module>
+        <module>auditlog</module>
+        <module>product</module>
     </modules>
 
     <!-- Spring Boot父依赖 -->

@@ -6,6 +6,7 @@ import com.cheersai.nexus.auth.service.AuthService;
 import com.cheersai.nexus.auth.service.VerificationCodeService;
 import com.cheersai.nexus.common.model.base.Result;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,7 +30,7 @@ public class AuthController {
      * 发送验证码
      */
     @PostMapping("/send-code")
-    public Result<Void> sendCode(@RequestBody SendCodeRequest request) {
+    public Result<Void> sendCode(@Valid @RequestBody SendCodeRequest request) {
         String target = request.getEmail() != null ? request.getEmail() : request.getPhone();
         String type = request.getEmail() != null ? "email" : "phone";
 
@@ -41,7 +42,7 @@ public class AuthController {
      * 用户注册
      */
     @PostMapping("/register")
-    public Result<AuthResponse> register(@RequestBody RegisterRequest request,
+    public Result<AuthResponse> register(@Valid @RequestBody RegisterRequest request,
                                          HttpServletRequest httpRequest) {
         String ipAddress = getClientIp(httpRequest);
         String userAgent = httpRequest.getHeader("User-Agent");
@@ -54,7 +55,7 @@ public class AuthController {
      * 用户登录
      */
     @PostMapping("/login")
-    public Result<AuthResponse> login(@RequestBody LoginRequest request,
+    public Result<AuthResponse> login(@Valid @RequestBody LoginRequest request,
                                        HttpServletRequest httpRequest) {
         String ipAddress = getClientIp(httpRequest);
         String userAgent = httpRequest.getHeader("User-Agent");

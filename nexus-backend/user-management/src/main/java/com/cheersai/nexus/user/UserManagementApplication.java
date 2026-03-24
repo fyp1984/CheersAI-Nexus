@@ -10,7 +10,7 @@ import org.springframework.context.annotation.ComponentScan;
         "com.cheersai.nexus.user", 
         "com.cheersai.nexus.common"
 })
-@MapperScan
+@MapperScan("com.cheersai.nexus.user.mapper")
 public class UserManagementApplication {
 
     public static void main(String[] args) {
