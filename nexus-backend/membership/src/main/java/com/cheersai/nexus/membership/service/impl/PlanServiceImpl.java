@@ -230,12 +230,12 @@ public class PlanServiceImpl extends ServiceImpl<MembershipPlanMapper, Membershi
         
         // 更新审批记录
         UpdateChain.of(PlanAuditLog.class)
-                .set("audit_status", auditStatus)
-                .set("auditor_id", auditorId)
-                .set("auditor_name", auditorName)
-                .set("audit_remark", dto.getAuditRemark())
-                .set("audited_at", LocalDateTime.now())
-                .where("id", pendingLog.getId())
+                .set(PlanAuditLog::getAuditStatus, auditStatus)
+                .set(PlanAuditLog::getAuditorId, auditorId)
+                .set(PlanAuditLog::getAuditorName, auditorName)
+                .set(PlanAuditLog::getAuditRemark, dto.getAuditRemark())
+                .set(PlanAuditLog::getAuditedAt, LocalDateTime.now())
+                .eq(PlanAuditLog::getId, pendingLog.getId())
                 .update();
 
         // 如果审批通过，应用变更

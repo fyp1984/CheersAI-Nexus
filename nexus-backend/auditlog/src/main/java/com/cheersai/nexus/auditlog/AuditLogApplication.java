@@ -10,7 +10,7 @@ import org.springframework.context.annotation.ComponentScan;
         "com.cheersai.nexus.auditlog",
         "com.cheersai.nexus.common"
 })
-@MapperScan
+@MapperScan("com.cheersai.nexus.auditlog.mapper")
 public class AuditLogApplication {
 
     public static void main(String[] args) {

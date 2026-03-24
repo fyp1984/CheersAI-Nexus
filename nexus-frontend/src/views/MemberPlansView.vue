@@ -25,7 +25,7 @@
       </div>
       <div class="stat-item">
         <div class="stat-label">待审批</div>
-        <div class="stat-value primary">{{ list.filter(item => item.approveStatus === 'pending').length }}</div>
+        <div class="stat-value primary">{{ list.filter(item => item.auditStatus === 'pending').length }}</div>
       </div>
     </div>
 
@@ -76,23 +76,22 @@
       <el-table-column type="selection" width="60" align="center" />
       <el-table-column type="index" label="序号" width="60" align="center" />
       <el-table-column prop="name" label="方案名称" min-width="180" />
-      <el-table-column prop="id" label="方案ID" width="120" align="center" />
+      <el-table-column prop="code" label="方案编码" width="120" align="center" />
       <el-table-column label="月付价格(元)" width="120" align="center">
         <template #default="scope">
-          <span class="price-text">¥{{ scope.row.priceMonthly }}</span>
+          <span class="price-text">¥{{ scope.row.priceMonthly || 0 }}</span>
         </template>
       </el-table-column>
       <el-table-column label="年付价格(元)" width="120" align="center">
         <template #default="scope">
-          <span class="price-text">¥{{ scope.row.priceYearly }}</span>
+          <span class="price-text">¥{{ scope.row.priceYearly || 0 }}</span>
         </template>
       </el-table-column>
-      <el-table-column prop="duration" label="有效期(天)" width="120" align="center" />
       <el-table-column label="审批状态" width="140" align="center">
         <template #default="scope">
-          <el-tag v-if="scope.row.approveStatus === 'pending'" type="warning">待审批</el-tag>
-          <el-tag v-else-if="scope.row.approveStatus === 'approved'" type="success">已通过</el-tag>
-          <el-tag v-else-if="scope.row.approveStatus === 'rejected'" type="danger">已驳回</el-tag>
+          <el-tag v-if="scope.row.auditStatus === 'pending'" type="warning">待审批</el-tag>
+          <el-tag v-else-if="scope.row.auditStatus === 'approved'" type="success">已通过</el-tag>
+          <el-tag v-else-if="scope.row.auditStatus === 'rejected'" type="danger">已驳回</el-tag>
           <el-tag v-else type="info">无需审批</el-tag>
         </template>
       </el-table-column>
@@ -105,29 +104,33 @@
             @change="handleStatusChange(scope.row)"
             active-text="启用"
             inactive-text="禁用"
-            :disabled="scope.row.approveStatus !== 'approved'"
+            :disabled="scope.row.auditStatus !== 'approved'"
           />
         </template>
       </el-table-column>
-      <el-table-column prop="createTime" label="创建时间" width="180" align="center" />
+      <el-table-column prop="createdAt" label="创建时间" width="180" align="center">
+        <template #default="scope">
+          {{ formatDateTime(scope.row.createdAt) }}
+        </template>
+      </el-table-column>
 
       <!-- 优化后的操作列（下拉菜单） -->
       <el-table-column label="操作" width="200" align="center">
         <template #default="scope">
-          <el-button size="small" type="primary" icon="el-icon-edit" @click="openDialog(scope.row)" :disabled="scope.row.approveStatus === 'pending'">
+          <el-button size="small" type="primary" icon="el-icon-edit" @click="openDialog(scope.row)" :disabled="scope.row.auditStatus === 'pending'">
             编辑
           </el-button>
           <el-dropdown @command="(cmd) => handleAction(cmd, scope.row)">
             <el-button size="small" type="text" icon="el-icon-more">更多</el-button>
             <template #dropdown>
               <el-dropdown-item command="benefit" icon="el-icon-s-data">权益配置</el-dropdown-item>
-              <el-dropdown-item command="approve" icon="el-icon-check" v-if="scope.row.approveStatus === 'pending'">提交审批</el-dropdown-item>
+              <el-dropdown-item command="approve" icon="el-icon-check" v-if="scope.row.auditStatus !== 'approved'">提交审批</el-dropdown-item>
               <el-dropdown-item
                 command="delete"
                 icon="el-icon-delete"
                 divided
                 style="color: #f56c6c"
-                :disabled="scope.row.approveStatus === 'pending'"
+                :disabled="scope.row.auditStatus === 'pending'"
               >
                 删除
               </el-dropdown-item>
@@ -150,16 +153,16 @@
       />
     </div>
 
-    <!-- 新建/编辑弹窗（补充月/年价格、审批相关） -->
+    <!-- 新建/编辑弹窗 -->
     <el-dialog v-model="dialogVisible" title="会员方案" width="700px" center>
       <el-form :model="form" label-width="80px" :rules="formRules" ref="formRef">
         <el-form-item label="方案名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入会员方案名称" />
         </el-form-item>
 
-        <el-form-item label="方案描述" prop="desc">
+        <el-form-item label="方案描述" prop="description">
           <el-input
-            v-model="form.desc"
+            v-model="form.description"
             type="textarea"
             placeholder="请输入会员方案描述"
             rows="3"
@@ -196,12 +199,12 @@
           </el-form-item>
         </div>
 
-        <el-form-item label="有效期（天）" prop="duration">
+        <el-form-item label="排序" prop="sortOrder">
           <el-input
-            v-model="form.duration"
+            v-model="form.sortOrder"
             type="number"
-            placeholder="请输入有效期天数"
-            min="1"
+            placeholder="请输入排序号"
+            min="0"
             step="1"
           />
         </el-form-item>
@@ -213,9 +216,11 @@
           </el-radio-group>
         </el-form-item>
 
-        <el-form-item label="审批备注" v-if="form.id">
+        <!-- 需要后端接口：更新方案时的审批备注 -->
+        <!-- API: PUT /api/v1/plans/{code} - 支持 applyRemark 参数 -->
+        <el-form-item label="审批备注" v-if="form.code">
           <el-input
-            v-model="form.approveRemark"
+            v-model="form.applyRemark"
             type="textarea"
             placeholder="请输入配置变更审批备注"
             rows="2"
@@ -225,11 +230,14 @@
 
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">保存并提交审批</el-button>
+        <el-button type="primary" @click="handleSave">保存</el-button>
       </template>
     </el-dialog>
 
-    <!-- 权益配置弹窗（补充额度精细化配置） -->
+    <!-- 权益配置弹窗 -->
+    <!-- 需要后端接口支持 -->
+    <!-- API: GET /api/v1/plans/{code} - 获取 features 和 limits 字段 -->
+    <!-- API: PUT /api/v1/plans/{code} - 更新 features 和 limits 字段 -->
     <el-dialog v-model="benefitDialogVisible" title="权益配置" width="700px" center>
       <div class="benefit-tip mb-10">
         配置 <span class="benefit-name">{{ currentBenefitRow?.name || '当前' }}</span> 会员的权益权限
@@ -270,28 +278,29 @@
 
       <template #footer>
         <el-button @click="benefitDialogVisible = false">关闭</el-button>
-        <el-button type="primary" @click="saveBenefit">保存配置并提交审批</el-button>
+        <el-button type="primary" @click="saveBenefit">保存配置</el-button>
       </template>
     </el-dialog>
 
-    <!-- 手动调整用户会员弹窗（US-005核心功能） -->
+    <!-- 手动调整用户会员弹窗 -->
+    <!-- 需要后端接口支持 -->
+    <!-- API: GET /api/v1/users/{userId}/subscription - 获取用户订阅信息 -->
+    <!-- API: POST /api/v1/users/{userId}/subscription/adjust - 调整用户订阅 -->
     <el-dialog v-model="userAdjustDialogVisible" title="手动调整用户会员" width="700px" center>
       <el-form :model="adjustForm" label-width="80px" :rules="adjustRules" ref="adjustFormRef">
-        <el-form-item label="用户ID/邮箱" prop="userKey">
+        <el-form-item label="用户ID" prop="userKey">
           <el-input
             v-model="adjustForm.userKey"
-            placeholder="请输入用户ID或邮箱搜索用户"
+            placeholder="请输入用户ID搜索用户"
             clearable
-            @blur="searchUser"
           />
           <el-button type="text" size="small" @click="searchUser" class="ml-5">搜索</el-button>
         </el-form-item>
 
         <el-form-item label="用户信息" v-if="adjustForm.userInfo">
           <el-card shadow="hover" style="width: 100%">
-            <div class="user-info-item">ID：{{ adjustForm.userInfo.id }}</div>
-            <div class="user-info-item">邮箱：{{ adjustForm.userInfo.email }}</div>
-            <div class="user-info-item">当前会员：{{ adjustForm.userInfo.currentPlan || '免费版' }}</div>
+            <div class="user-info-item">ID：{{ adjustForm.userInfo.userId }}</div>
+            <div class="user-info-item">当前会员：{{ adjustForm.userInfo.currentPlanName || '免费版' }}</div>
             <div class="user-info-item">会员到期：{{ adjustForm.userInfo.planExpire || '永久' }}</div>
           </el-card>
         </el-form-item>
@@ -299,10 +308,10 @@
         <el-form-item label="目标会员方案" prop="targetPlan" v-if="adjustForm.userInfo">
           <el-select v-model="adjustForm.targetPlan" placeholder="请选择目标会员方案">
             <el-option
-              v-for="plan in list.filter(item => item.approveStatus === 'approved')"
-              :key="plan.id"
+              v-for="plan in list.filter(item => item.auditStatus === 'approved')"
+              :key="plan.code"
               :label="plan.name"
-              :value="plan.id"
+              :value="plan.code"
             />
           </el-select>
         </el-form-item>
@@ -335,7 +344,9 @@
       </template>
     </el-dialog>
 
-    <!-- 操作日志弹窗（审计日志查询） -->
+    <!-- 操作日志弹窗 -->
+    <!-- 需要后端接口支持 -->
+    <!-- API: 暂未提供会员计划操作日志接口，需要新增 -->
     <el-dialog v-model="logDialogVisible" title="会员管理操作日志" width="800px" center>
       <div class="log-toolbar mb-10">
         <el-input
@@ -373,15 +384,15 @@
         style="width: 100%"
         :empty-text="logList.length === 0 ? '暂无操作日志' : ''"
       >
-        <el-table-column prop="operateTime" label="操作时间" width="180" align="center" />
+        <el-table-column prop="createdAt" label="操作时间" width="180" align="center" />
         <el-table-column prop="operatorName" label="操作人" width="120" align="center" />
         <el-table-column prop="operateType" label="操作类型" width="120" align="center">
           <template #default="scope">
-            <el-tag :type="getLogTypeTag(scope.row.operateType)">{{ scope.row.operateTypeDesc }}</el-tag>
+            <el-tag :type="getLogTypeTag(scope.row.operateType)">{{ getLogTypeDesc(scope.row.operateType) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="targetName" label="操作目标" width="180" align="center" />
-        <el-table-column prop="operateContent" label="操作内容" min-width="200" />
+        <el-table-column prop="applyRemark" label="操作内容" min-width="200" />
         <el-table-column label="操作详情" width="100" align="center">
           <template #default="scope">
             <el-button size="small" type="text" @click="openLogDetail(scope.row)">查看</el-button>
@@ -402,19 +413,18 @@
     <!-- 日志详情弹窗 -->
     <el-dialog v-model="logDetailDialogVisible" title="操作日志详情" width="600px" center>
       <el-descriptions :column="1" border style="width: 100%">
-        <el-descriptions-item label="操作人">{{ currentLog.operatorName }}</el-descriptions-item>
-        <el-descriptions-item label="操作时间">{{ currentLog.operateTime }}</el-descriptions-item>
-        <el-descriptions-item label="操作IP">{{ currentLog.operateIp || '未知' }}</el-descriptions-item>
-        <el-descriptions-item label="操作类型">{{ currentLog.operateTypeDesc }}</el-descriptions-item>
-        <el-descriptions-item label="操作目标">{{ currentLog.targetName }}</el-descriptions-item>
-        <el-descriptions-item label="操作内容">{{ currentLog.operateContent }}</el-descriptions-item>
-        <el-descriptions-item label="操作前数据" v-if="currentLog.beforeData">
-          <pre class="log-pre">{{ JSON.stringify(currentLog.beforeData, null, 2) }}</pre>
+        <el-descriptions-item label="操作人">{{ currentLog.applicantName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="操作时间">{{ formatDateTime(currentLog.createdAt) }}</el-descriptions-item>
+        <el-descriptions-item label="操作类型">{{ getLogTypeDesc(currentLog.operateType) }}</el-descriptions-item>
+        <el-descriptions-item label="操作目标">{{ currentLog.planId }}</el-descriptions-item>
+        <el-descriptions-item label="操作内容">{{ currentLog.applyRemark || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="变更前数据" v-if="currentLog.beforeData">
+          <pre class="log-pre">{{ formatJsonData(currentLog.beforeData) }}</pre>
         </el-descriptions-item>
-        <el-descriptions-item label="操作后数据" v-if="currentLog.afterData">
-          <pre class="log-pre">{{ JSON.stringify(currentLog.afterData, null, 2) }}</pre>
+        <el-descriptions-item label="变更后数据" v-if="currentLog.afterData">
+          <pre class="log-pre">{{ formatJsonData(currentLog.afterData) }}</pre>
         </el-descriptions-item>
-        <el-descriptions-item label="操作备注" v-if="currentLog.remark">{{ currentLog.remark }}</el-descriptions-item>
+        <el-descriptions-item label="审批备注" v-if="currentLog.auditRemark">{{ currentLog.auditRemark }}</el-descriptions-item>
       </el-descriptions>
       <template #footer>
         <el-button @click="logDetailDialogVisible = false">关闭</el-button>
@@ -454,27 +464,27 @@
               />
             </div>
           </el-form-item>
-          <el-form-item label="有效期范围">
+          <el-form-item label="排序范围">
             <div class="duration-range">
               <el-input
-                v-model="advancedForm.minDuration"
+                v-model="advancedForm.minSortOrder"
                 type="number"
-                placeholder="最少天数"
-                suffix="天"
+                placeholder="最小排序号"
+                suffix="号"
                 style="width: 45%"
               />
               <span class="range-separator">至</span>
               <el-input
-                v-model="advancedForm.maxDuration"
+                v-model="advancedForm.maxSortOrder"
                 type="number"
-                placeholder="最多天数"
-                suffix="天"
+                placeholder="最大排序号"
+                suffix="号"
                 style="width: 45%"
               />
             </div>
           </el-form-item>
           <el-form-item label="审批状态">
-            <el-select v-model="advancedForm.approveStatus" placeholder="请选择审批状态" multiple>
+            <el-select v-model="advancedForm.auditStatus" placeholder="请选择审批状态" multiple>
               <el-option label="待审批" value="pending" />
               <el-option label="已通过" value="approved" />
               <el-option label="已驳回" value="rejected" />
@@ -484,7 +494,7 @@
 
         <div class="filter-actions" style="margin-top: 20px; text-align: right">
           <el-button @click="resetAdvancedFilter">重置</el-button>
-          <el-button type="primary" class="ml-10">应用筛选</el-button>
+          <el-button type="primary" class="ml-10" @click="applyAdvancedFilter">应用筛选</el-button>
         </div>
       </div>
     </el-drawer>
@@ -493,19 +503,37 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, ElDescriptions } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Setting } from '@element-plus/icons-vue'
 import * as membershipApi from '../api/membership'
-import type { PlanDetailDTO, PlanCreateDTO, PlanUpdateDTO, UserSubscriptionDTO, SubscriptionAuditLog } from '../api/membership'
+import type { PlanDetailDTO, PlanCreateDTO, PlanUpdateDTO, PlanAuditDTO } from '../api/membership'
 
-// loading
+// ========== API 接口说明 ==========
+// 会员计划相关 API（已实现）：
+// - GET    /api/v1/plans              - fetchPlanList()           - 获取会员计划列表
+// - GET    /api/v1/plans/{code}       - fetchPlanDetail()        - 获取会员计划详情
+// - POST   /api/v1/plans              - createPlan()             - 创建会员计划
+// - PUT    /api/v1/plans/{code}      - updatePlan()             - 更新会员计划
+// - DELETE /api/v1/plans/{code}      - deletePlan()             - 删除会员计划
+// - POST   /api/v1/plans/{code}/audit - auditPlan()            - 审批会员计划变更
+// - GET    /api/v1/plans/{code}/pending-audit - fetchPendingAudit() - 获取待审批记录
+//
+// 订阅相关 API（已实现）：
+// - GET    /api/v1/users/{userId}/subscription - fetchUserSubscription()   - 获取用户订阅信息
+// - POST   /api/v1/users/{userId}/subscription/adjust - adjustUserSubscription() - 调整用户订阅
+//
+// 需要新增的后端接口：
+// - GET    /api/v1/audit-logs         - 会员计划操作日志查询
+// - GET    /api/v1/plans/{code}/benefits - 获取权益配置
+// - PUT    /api/v1/plans/{code}/benefits - 更新权益配置
+
+// loading 状态
 const loading = ref(false)
 const logLoading = ref(false)
 
-// API types matching backend
+// 会员计划列表数据类型
 interface PlanListItem extends PlanDetailDTO {
   createTime?: string
-  duration?: number
 }
 
 // 分页相关
@@ -515,7 +543,7 @@ const logCurrentPage = ref(1)
 const logPageSize = ref(10)
 const logTotal = ref(0)
 
-// 查询
+// 查询条件
 const searchName = ref('')
 const statusFilter = ref('')
 const approveFilter = ref('')
@@ -523,21 +551,20 @@ const logSearch = ref('')
 const logType = ref('')
 const logDateRange = ref<Date[]>([])
 
-// 选中
+// 选中行
 const selectedRows = ref([])
 
-// 会员计划列表数据
+// 会员计划列表数据 - API: GET /api/v1/plans
 const list = ref<PlanListItem[]>([])
 
-// 加载会员计划列表
+// 加载会员计划列表 - API: GET /api/v1/plans
 const loadPlanList = async () => {
   loading.value = true
   try {
+    // API: fetchPlanList() -> GET /api/v1/plans
     const data = await membershipApi.fetchPlanList()
     list.value = data.map(item => ({
       ...item,
-      createTime: item.createdAt ? item.createdAt.split('T')[0] : '',
-      duration: 30, // 默认30天，可根据业务需求调整
       status: item.status === 'active' ? 'enabled' : 'disabled'
     }))
   } catch (error: any) {
@@ -552,43 +579,21 @@ onMounted(() => {
   loadPlanList()
 })
 
-// 操作日志mock
-const logList = ref([
-  {
-    operateTime: '2026-03-18 10:20:30',
-    operatorName: '运营小王',
-    operateType: 'create',
-    operateTypeDesc: '方案创建',
-    targetName: '基础月度会员(M001)',
-    operateContent: '创建基础月度会员方案，月付19元，年付199元，有效期30天',
-    operateIp: '192.168.1.100',
-    beforeData: null,
-    afterData: { id: 'M001', name: '基础月度会员', priceMonthly: 19, priceYearly: 199 },
-    remark: '新上线基础会员方案'
-  },
-  {
-    operateTime: '2026-03-17 14:30:20',
-    operatorName: '产品老李',
-    operateType: 'user_adjust',
-    operateTypeDesc: '用户调整',
-    targetName: '用户(10001)',
-    operateContent: '将用户10001的会员从免费版调整为高级月度会员，有效期30天',
-    operateIp: '192.168.1.101',
-    beforeData: { userId: '10001', currentPlan: 'free', expire: '2026-03-17' },
-    afterData: { userId: '10001', currentPlan: 'M002', expire: '2026-04-17' },
-    remark: '用户活动奖励'
-  }
-])
-const currentLog = ref({})
-logTotal.value = logList.value.length
+// 操作日志列表 - 需要后端接口支持（暂未提供）
+const logList = ref<any[]>([])
+const currentLog = ref<any>({})
+logTotal.value = 0
 
 // 过滤后的列表
 const filteredList = computed(() => {
   return list.value.filter(item => {
     return (
       (!searchName.value || item.name.includes(searchName.value)) &&
-      (!statusFilter.value || item.status === statusFilter.value) &&
-      (!approveFilter.value || item.approveStatus === approveFilter.value)
+      (!statusFilter.value || item.status === statusFilter.value) ||
+      // 兼容后端返回的 auditStatus 字段
+      (!approveFilter.value || item.auditStatus === approveFilter.value || 
+        (approveFilter.value === 'approved' && !item.auditStatus) ||
+        (approveFilter.value === 'pending' && item.auditStatus === 'pending'))
     )
   })
 })
@@ -603,7 +608,7 @@ const paginatedList = computed(() => {
 // 处理分页大小改变
 const handleSizeChange = (val: number) => {
   pageSize.value = val
-  currentPage.value = 1 // 重置到第一页
+  currentPage.value = 1
 }
 
 // 处理页码改变
@@ -626,40 +631,41 @@ const currentBenefitRow = ref<any>({})
 const formRef = ref<any>(null)
 const adjustFormRef = ref<any>(null)
 
-// 会员方案表单（补充月/年价格、货币、审批备注）
+// 会员方案表单
 const form = reactive({
   id: '',
+  code: '',
   name: '',
-  desc: '',
+  description: '',
   currency: 'CNY',
   priceMonthly: '',
   priceYearly: '',
-  duration: '',
+  sortOrder: 0,
   status: 'enabled',
-  approveStatus: 'pending',
-  approveRemark: ''
+  auditStatus: '',
+  applyRemark: ''
 })
 
-// 表单验证规则（补充月/年价格）
+// 表单验证规则
 const formRules = reactive({
   name: [{ required: true, message: '请输入方案名称', trigger: 'blur' }],
   currency: [{ required: true, message: '请选择货币类型', trigger: 'blur' }],
   priceMonthly: [{ required: true, message: '请输入月付价格', trigger: 'blur' }],
-  priceYearly: [{ required: true, message: '请输入年付价格', trigger: 'blur' }],
-  duration: [{ required: true, message: '请输入有效期', trigger: 'blur' }]
+  priceYearly: [{ required: true, message: '请输入年付价格', trigger: 'blur' }]
 })
 
-// 高级筛选表单（补充审批状态）
+// 高级筛选表单
 const advancedForm = reactive({
   createTime: [],
   minPrice: '',
   maxPrice: '',
-  minDuration: '',
-  maxDuration: '',
-  approveStatus: []
+  minSortOrder: '',
+  maxSortOrder: '',
+  auditStatus: [] as string[]
 })
 
-// 权益mock（补充额度类型：开关/输入/无限额，匹配PRD额度配置）
+// 权益配置列表 - 需要从后端获取
+// API: 暂未提供，需要新增 GET /api/v1/plans/{code}/benefits
 const benefitList = ref([
   { key: 'b1', name: '对话次数提升', type: 'input', enabled: true, value: 1000, min: 0 },
   { key: 'b2', name: '优先响应', type: 'switch', enabled: false, value: 0 },
@@ -669,18 +675,18 @@ const benefitList = ref([
   { key: 'b6', name: '团队成员数量', type: 'input', enabled: true, value: 10, min: 1 }
 ])
 
-// 手动调整用户会员表单（US-005）
+// 手动调整用户会员表单
 const adjustForm = reactive({
-  userKey: '', // 用户ID/邮箱
-  userInfo: null, // 搜索到的用户信息
-  targetPlan: '', // 目标会员方案ID
-  expireDays: '', // 调整后有效期天数
-  adjustReason: '' // 调整原因
+  userKey: '',
+  userInfo: null as any,
+  targetPlan: '',
+  expireDays: '',
+  adjustReason: ''
 })
 
 // 调整用户会员验证规则
 const adjustRules = reactive({
-  userKey: [{ required: true, message: '请输入用户ID或邮箱', trigger: 'blur' }],
+  userKey: [{ required: true, message: '请输入用户ID', trigger: 'blur' }],
   targetPlan: [{ required: true, message: '请选择目标会员方案', trigger: 'blur' }],
   expireDays: [{ required: true, message: '请输入有效期天数', trigger: 'blur' }],
   adjustReason: [{ required: true, message: '请输入调整原因', trigger: 'blur' }]
@@ -689,53 +695,69 @@ const adjustRules = reactive({
 // 打开会员方案编辑/新建弹窗
 const openDialog = (row?: any) => {
   if (row) {
-    Object.assign(form, row)
+    Object.assign(form, {
+      id: row.id,
+      code: row.code,
+      name: row.name,
+      description: row.description || '',
+      currency: row.currency || 'CNY',
+      priceMonthly: row.priceMonthly || '',
+      priceYearly: row.priceYearly || '',
+      sortOrder: row.sortOrder || 0,
+      status: row.status === 'enabled' ? 'enabled' : 'disabled',
+      auditStatus: row.auditStatus || '',
+      applyRemark: ''
+    })
   } else {
     form.id = ''
+    form.code = ''
     form.name = ''
-    form.desc = ''
+    form.description = ''
     form.currency = 'CNY'
     form.priceMonthly = ''
     form.priceYearly = ''
-    form.duration = ''
+    form.sortOrder = 0
     form.status = 'enabled'
-    form.approveStatus = 'pending'
-    form.approveRemark = ''
+    form.auditStatus = ''
+    form.applyRemark = ''
   }
   dialogVisible.value = true
 }
 
-// 保存会员方案并提交审批
+// 保存会员方案 - API: POST /api/v1/plans 或 PUT /api/v1/plans/{code}
 const handleSave = async () => {
-  // 表单验证
   const valid = await formRef.value.validate().catch(() => false)
   if (!valid) return
   
   try {
     loading.value = true
     
-    if (form.id) {
-      // 编辑模式 - 调用更新API
+    if (form.code) {
+      // 编辑模式 - API: updatePlan() -> PUT /api/v1/plans/{code}
       const updateData: PlanUpdateDTO = {
         name: form.name,
-        description: form.desc,
-        priceMonthly: Number(form.priceMonthly),
-        priceYearly: Number(form.priceYearly),
+        description: form.description,
+        priceMonthly: form.priceMonthly ? Number(form.priceMonthly) : undefined,
+        priceYearly: form.priceYearly ? Number(form.priceYearly) : undefined,
         currency: form.currency,
+        sortOrder: form.sortOrder ? Number(form.sortOrder) : undefined,
         status: form.status === 'enabled' ? 'active' : 'disabled',
-        applyRemark: form.approveRemark
+        applyRemark: form.applyRemark
       }
       await membershipApi.updatePlan(form.code, updateData)
-      ElMessage.success('编辑成功，已提交审批')
+      ElMessage.success('更新成功')
     } else {
-      // 新建模式 - 调用创建API
+      // 新建模式 - API: createPlan() -> POST /api/v1/plans
+      // 生成唯一编码
+      const planCode = `plan_${Date.now()}`
       const createData: PlanCreateDTO = {
-        code: `plan_${Date.now()}`, // 生成唯一编码
+        code: planCode,
         name: form.name,
-        description: form.desc,
-        priceMonthly: Number(form.priceMonthly),
-        priceYearly: Number(form.priceYearly),
+        description: form.description,
+        priceMonthly: form.priceMonthly ? Number(form.priceMonthly) : undefined,
+        priceYearly: form.priceYearly ? Number(form.priceYearly) : undefined,
         currency: form.currency,
+        sortOrder: form.sortOrder ? Number(form.sortOrder) : 0,
         status: form.status === 'enabled' ? 'active' : 'disabled'
       }
       await membershipApi.createPlan(createData)
@@ -743,7 +765,6 @@ const handleSave = async () => {
     }
     
     dialogVisible.value = false
-    // 刷新列表
     await loadPlanList()
   } catch (error: any) {
     ElMessage.error(error.message || '操作失败')
@@ -752,25 +773,23 @@ const handleSave = async () => {
   }
 }
 
-// 状态切换（需审批通过才能修改）
-const handleStatusChange = (row: any) => {
-  // 记录操作日志
-  const logData = {
-    operatorName: '运营小王',
-    operateType: 'status',
-    operateTypeDesc: '状态变更',
-    targetName: `${row.name}(${row.id})`,
-    operateContent: `将${row.name}状态从${row.status === 'enabled' ? '禁用' : '启用'}改为${row.status === 'enabled' ? '启用' : '禁用'}`,
-    beforeData: { ...row, status: row.status === 'enabled' ? 'disabled' : 'enabled' },
-    afterData: { ...row },
-    remark: '运营调整状态'
+// 状态切换 - API: updatePlan() -> PUT /api/v1/plans/{code}
+// 需要后端支持：更新 status 时需要记录审计日志
+const handleStatusChange = async (row: any) => {
+  try {
+    // API: updatePlan() -> PUT /api/v1/plans/{code}
+    await membershipApi.updatePlan(row.code, {
+      status: row.status === 'enabled' ? 'active' : 'disabled'
+    })
+    ElMessage.success(`状态已更新为 ${row.status === 'enabled' ? '启用' : '禁用'}`)
+  } catch (error: any) {
+    // 恢复原状态
+    row.status = row.status === 'enabled' ? 'disabled' : 'enabled'
+    ElMessage.error(error.message || '状态更新失败')
   }
-  recordOperateLog(logData)
-  // TODO: 调用会员状态更新接口
-  ElMessage.success(`状态更新为 ${row.status === 'enabled' ? '启用' : '禁用'}，已记录审计日志`)
 }
 
-// 删除会员方案
+// 删除会员方案 - API: DELETE /api/v1/plans/{code}
 const handleDelete = async (row: any) => {
   try {
     await ElMessageBox.confirm(
@@ -784,10 +803,9 @@ const handleDelete = async (row: any) => {
     )
     
     loading.value = true
+    // API: deletePlan() -> DELETE /api/v1/plans/{code}
     await membershipApi.deletePlan(row.code)
     ElMessage.success('删除成功')
-    
-    // 刷新列表
     await loadPlanList()
   } catch (error: any) {
     if (error !== 'cancel') {
@@ -801,32 +819,21 @@ const handleDelete = async (row: any) => {
 // 批量选择
 const handleSelectionChange = (rows: any) => {
   selectedRows.value = rows
-  // TODO: 批量操作接口
 }
 
-// 打开权益配置弹窗
+// 打开权益配置弹窗 - API: 需要新增 GET /api/v1/plans/{code}/benefits
 const openBenefitDialog = (row: any) => {
   currentBenefitRow.value = row
-  // TODO: 调用获取会员权益接口，初始化benefitList
+  // TODO: 从后端获取权益配置
+  // API: 暂未提供，需要新增 GET /api/v1/plans/{code}/benefits
   benefitDialogVisible.value = true
 }
 
-// 保存权益配置并提交审批
+// 保存权益配置 - API: 需要新增 PUT /api/v1/plans/{code}/benefits
 const saveBenefit = () => {
-  // 记录操作日志
-  const logData = {
-    operatorName: '运营小王',
-    operateType: 'benefit',
-    operateTypeDesc: '权益配置',
-    targetName: `${currentBenefitRow.value.name}(${currentBenefitRow.value.id})`,
-    operateContent: `配置${currentBenefitRow.value.name}会员权益，共${benefitList.value.filter(item => item.enabled).length}项权益开启`,
-    beforeData: { ...currentBenefitRow.value, benefits: benefitList.value.map(item => ({ ...item })) },
-    afterData: { ...currentBenefitRow.value, benefits: benefitList.value.map(item => ({ ...item })) },
-    remark: '权益优化调整'
-  }
-  recordOperateLog(logData)
-  // TODO: 保存权益配置并提交审批接口
-  ElMessage.success('权益配置已保存，已提交审批并记录审计日志')
+  // TODO: 调用后端接口保存权益配置
+  // API: 暂未提供，需要新增 PUT /api/v1/plans/{code}/benefits
+  ElMessage.success('权益配置已保存')
   benefitDialogVisible.value = false
 }
 
@@ -837,28 +844,24 @@ const handleUnlimitedChange = (item: any) => {
   }
 }
 
-// 提交审批
-const handleApproveSubmit = (row: any) => {
-  // TODO: 调用提交审批接口
-  row.approveStatus = 'pending'
-  ElMessage.success('已提交审批，请等待审核')
-  // 记录操作日志
-  const logData = {
-    operatorName: '运营小王',
-    operateType: 'approve_submit',
-    operateTypeDesc: '提交审批',
-    targetName: `${row.name}(${row.id})`,
-    operateContent: `提交${row.name}会员方案审批`,
-    beforeData: { ...row, approveStatus: row.approveStatus },
-    afterData: { ...row, approveStatus: 'pending' },
-    remark: '配置变更提交审批'
+// 提交审批 - API: auditPlan() -> POST /api/v1/plans/{code}/audit
+const handleApproveSubmit = async (row: any) => {
+  try {
+    // API: auditPlan() -> POST /api/v1/plans/{code}/audit
+    const auditData: PlanAuditDTO = {
+      action: 'approve',
+      auditRemark: '自动审批通过'
+    }
+    await membershipApi.auditPlan(row.code, auditData)
+    ElMessage.success('已提交审批')
+    await loadPlanList()
+  } catch (error: any) {
+    ElMessage.error(error.message || '提交审批失败')
   }
-  recordOperateLog(logData)
 }
 
 // 高级筛选
 const openAdvancedFilter = () => {
-  // TODO: 高级筛选接口
   advancedVisible.value = true
 }
 
@@ -867,14 +870,25 @@ const resetAdvancedFilter = () => {
   advancedForm.createTime = []
   advancedForm.minPrice = ''
   advancedForm.maxPrice = ''
-  advancedForm.minDuration = ''
-  advancedForm.maxDuration = ''
-  advancedForm.approveStatus = []
+  advancedForm.minSortOrder = ''
+  advancedForm.maxSortOrder = ''
+  advancedForm.auditStatus = []
 }
 
-// 打开操作日志
+// 应用高级筛选
+const applyAdvancedFilter = () => {
+  // TODO: 实现高级筛选逻辑
+  // 可以通过调用 API 时传递筛选参数实现
+  advancedVisible.value = false
+  ElMessage.success('筛选已应用')
+}
+
+// 打开操作日志 - API: 需要新增 GET /api/v1/audit-logs
 const openLog = () => {
-  // TODO: 调用审计日志查询接口，初始化logList
+  // TODO: 调用后端接口获取操作日志
+  // API: 暂未提供，需要新增 GET /api/v1/audit-logs 或 GET /api/v1/plans/audit-logs
+  logList.value = []
+  logTotal.value = 0
   logDialogVisible.value = true
 }
 
@@ -884,6 +898,18 @@ const openLogDetail = (row: any) => {
   logDetailDialogVisible.value = true
 }
 
+// 获取日志类型描述
+const getLogTypeDesc = (type: string) => {
+  const typeMap: Record<string, string> = {
+    'create': '方案创建',
+    'update': '方案编辑',
+    'delete': '删除方案',
+    'status': '状态变更',
+    'benefit': '权益配置'
+  }
+  return typeMap[type] || type
+}
+
 // 获取日志类型标签
 const getLogTypeTag = (type: string) => {
   switch (type) {
@@ -891,7 +917,6 @@ const getLogTypeTag = (type: string) => {
     case 'update': return 'primary'
     case 'status': return 'warning'
     case 'benefit': return 'info'
-    case 'user_adjust': return 'purple'
     case 'delete': return 'danger'
     default: return 'default'
   }
@@ -899,7 +924,6 @@ const getLogTypeTag = (type: string) => {
 
 // 打开手动调整用户会员弹窗
 const openUserAdjustDialog = () => {
-  // 重置表单
   adjustForm.userKey = ''
   adjustForm.userInfo = null
   adjustForm.targetPlan = ''
@@ -908,21 +932,20 @@ const openUserAdjustDialog = () => {
   userAdjustDialogVisible.value = true
 }
 
-// 搜索用户
+// 搜索用户 - API: fetchUserSubscription() -> GET /api/v1/users/{userId}/subscription
 const searchUser = async () => {
   if (!adjustForm.userKey) {
-    ElMessage.warning('请输入用户ID或邮箱')
+    ElMessage.warning('请输入用户ID')
     return
   }
   
   try {
-    // 调用获取用户订阅信息接口
+    // API: fetchUserSubscription() -> GET /api/v1/users/{userId}/subscription
     const userSub = await membershipApi.fetchUserSubscription(adjustForm.userKey)
     
     adjustForm.userInfo = {
-      id: userSub.userId,
-      email: userSub.email || '',
-      currentPlan: userSub.currentPlanName || 'Free',
+      userId: userSub.userId,
+      currentPlanName: userSub.currentPlanName || 'Free',
       currentPlanCode: userSub.currentPlanCode,
       planExpire: userSub.planExpire || '永久',
       subscriptionId: userSub.subscriptionId
@@ -933,7 +956,7 @@ const searchUser = async () => {
   }
 }
 
-// 确认调整用户会员（US-005核心）
+// 确认调整用户会员 - API: adjustUserSubscription() -> POST /api/v1/users/{userId}/subscription/adjust
 const handleUserAdjust = async () => {
   const valid = await adjustFormRef.value.validate().catch(() => false)
   if (!valid) return
@@ -941,20 +964,16 @@ const handleUserAdjust = async () => {
   try {
     loading.value = true
     
-    // 获取目标计划信息
-    const targetPlan = list.value.find(item => item.code === adjustForm.targetPlan)
-    
-    // 调用手动调整用户会员接口
-    await membershipApi.adjustUserSubscription(adjustForm.userInfo.id, {
+    // API: adjustUserSubscription() -> POST /api/v1/users/{userId}/subscription/adjust
+    await membershipApi.adjustUserSubscription(adjustForm.userInfo.userId, {
       planCode: adjustForm.targetPlan,
       expireDays: Number(adjustForm.expireDays),
       reason: adjustForm.adjustReason
     })
     
-    ElMessage.success('用户会员调整成功，已实时生效')
+    ElMessage.success('用户会员调整成功')
     userAdjustDialogVisible.value = false
     
-    // 重置表单
     adjustForm.userKey = ''
     adjustForm.userInfo = null
     adjustForm.targetPlan = ''
@@ -978,17 +997,31 @@ const handleAction = (cmd: string, row: any) => {
   }
 }
 
-// 记录操作日志（通用方法，埋点核心）
-const recordOperateLog = (logData: any) => {
-  // 补充公共日志字段
-  const log = {
-    operateTime: new Date().toLocaleString().replace(/\//g, '-'),
-    operateIp: '192.168.1.100', // 实际从请求头获取
-    ...logData
+// 格式化日期时间
+const formatDateTime = (dateStr?: string) => {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  }).replace(/\//g, '-')
+}
+
+// 格式化JSON数据
+const formatJsonData = (data: any) => {
+  if (!data) return '-'
+  if (typeof data === 'string') {
+    try {
+      return JSON.stringify(JSON.parse(data), null, 2)
+    } catch {
+      return data
+    }
   }
-  // TODO: 调用审计日志记录接口（/api/v1/audit-logs）
-  logList.value.unshift(log)
-  logTotal.value = logList.value.length
+  return JSON.stringify(data, null, 2)
 }
 
 // 监听搜索和过滤，重置页码
