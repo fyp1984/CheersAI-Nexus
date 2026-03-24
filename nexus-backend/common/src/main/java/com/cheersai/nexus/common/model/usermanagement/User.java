@@ -34,6 +34,14 @@ public class User {
 
     private String status;
 
+    private String role;
+
+    @Column("member_plan_code")
+    private String memberPlanCode;
+
+    @Column("member_expire_at")
+    private LocalDateTime memberExpireAt;
+
     @Builder.Default
     private Boolean emailVerified = false;
 

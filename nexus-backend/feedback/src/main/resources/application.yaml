@@ -1,29 +1,23 @@
-# 服务器配置
-server:
-  port: 8080
-  error:
-    include-message: always  # 暴露错误消息
-    include-stacktrace: always  # 暴露堆栈信息（仅测试环境用）
-  servlet:
-    context-path: /
-
-# Spring配置
 spring:
-  # 数据库配置
+  application:
+    name: feedback
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/postgres?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-    username: postgres  # 替换为你的数据库用户名
-    password: root123456  # 替换为你的数据库密码
-  # 事务管理
-  transaction:
-    default-timeout: 30
+    url: ${FEEDBACK_DB_URL:jdbc:postgresql://localhost:15432/nexus}
+    username: ${FEEDBACK_DB_USERNAME:postgres}
+    password: ${FEEDBACK_DB_PASSWORD:postgres}
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    baseline-version: 0
+    table: flyway_schema_history_feedback
 
-# MyBatisFlex配置
+server:
+  port: ${FEEDBACK_PORT:8084}
+
 mybatis-flex:
-  mapper-locations: classpath:mapper/**/*.xml
-  type-aliases-package: com.cheersai.nexus.feedback.entity
+  mapper-locations:
+    - classpath*:/mapper/*.xml
   configuration:
     map-underscore-to-camel-case: true
-    cache-enabled: false
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 打印SQL日志，方便调试

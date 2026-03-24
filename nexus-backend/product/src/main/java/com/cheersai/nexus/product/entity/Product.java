@@ -1,5 +1,7 @@
 package com.cheersai.nexus.product.entity;
 
+import com.cheersai.nexus.product.config.PostgreSqlJsonbTypeHandler;
+import com.cheersai.nexus.product.config.PostgreSqlUuidStringTypeHandler;
 import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.KeyType;
@@ -25,6 +27,7 @@ public class Product {
      * 产品ID - UUID主键
      */
     @Id(keyType = KeyType.Generator, value = "uuid")
+    @Column(typeHandler = PostgreSqlUuidStringTypeHandler.class)
     private String id;
 
     /**
@@ -63,14 +66,14 @@ public class Product {
      * 下载地址 - JSONB格式存储多个下载地址
      * 结构: [{"platform": "windows", "url": "https://...", "version": "1.0.0"}, ...]
      */
-    @Column("download_urls")
+    @Column(value = "download_urls", typeHandler = PostgreSqlJsonbTypeHandler.class)
     private String downloadUrls;
 
     /**
      * 产品设置 - JSONB格式存储功能开关等配置
      * 结构: {"featureFlags": {"darkMode": true, "apiAccess": false}, "customConfig": {...}}
      */
-    @Column("settings")
+    @Column(value = "settings", typeHandler = PostgreSqlJsonbTypeHandler.class)
     private String settings;
 
     /**

@@ -1,115 +1,81 @@
 package com.cheersai.nexus.user.controller;
 
 import com.cheersai.nexus.common.model.base.Result;
-import com.cheersai.nexus.common.model.usermanagement.User;
-import com.cheersai.nexus.common.utils.JacksonUtils;
-import com.cheersai.nexus.user.model.PageUserDTO;
+import com.cheersai.nexus.user.dto.ResetPasswordResponseDTO;
+import com.cheersai.nexus.user.dto.UserCreateDTO;
+import com.cheersai.nexus.user.dto.UserListQueryDTO;
+import com.cheersai.nexus.user.dto.UserListResponseDTO;
+import com.cheersai.nexus.user.dto.UserRecordDTO;
+import com.cheersai.nexus.user.dto.UserStatusBatchUpdateDTO;
+import com.cheersai.nexus.user.dto.UserUpdateDTO;
 import com.cheersai.nexus.user.service.UserService;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.mybatisflex.core.paginate.Page;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-/**
- * @ClassName:UserManagementController
- * @Description:用户管理功能控制器（Service层开发中）
- * @Author:userSigma
- * @CreateDate:2026/3/17 21:54
- */
 @RestController
+@RequestMapping("/api/v1/users")
+@RequiredArgsConstructor
 public class UserManagementController {
-    
-    @Autowired
-    private UserService userService;
-    
-    @Autowired
-    private JacksonUtils jacksonUtils;
 
-    /**
-     * 获取所有用户信息
-     * @param pageUserDTO 需要查询的传入参数
-     * @return Result<String>, 需要反序列化Result.data为Page<User>
-     */
-    @GetMapping("/api/v1/users")
-    public Result<String> getAllUsers(@RequestParam(required = false) PageUserDTO pageUserDTO) {
+    private final UserService userService;
 
-        if (pageUserDTO == null) {
-            pageUserDTO = new PageUserDTO();
-            pageUserDTO.setPageNumber(1); // 默认第一页
-            pageUserDTO.setPageSize(10);  // 默认每页10条
-        }
-        
-        Page<User> page = userService.getAllUsers(pageUserDTO.getPageNumber(), pageUserDTO.getPageSize(), pageUserDTO.getTotalRow());
-        if (page.getRecords() == null || page.getRecords().isEmpty()) {
-            return Result.error("数据未获取成功，请重试");
-        }
-        try {
-            return Result.success(jacksonUtils.toJson(page));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return Result.error(e.getMessage());
-        }
+    @GetMapping
+    public Result<UserListResponseDTO> getAllUsers(@RequestParam(value = "keyword", required = false) String keyword,
+                                                   @RequestParam(value = "status", required = false) String status,
+                                                   @RequestParam(value = "role", required = false) String role,
+                                                   @RequestParam(value = "memberPlanCode", required = false) String memberPlanCode,
+                                                   @RequestParam(value = "page", required = false) Integer page,
+                                                   @RequestParam(value = "pageSize", required = false) Integer pageSize) {
+        UserListQueryDTO query = UserListQueryDTO.builder()
+                .keyword(keyword)
+                .status(status)
+                .role(role)
+                .memberPlanCode(memberPlanCode)
+                .page(page)
+                .pageSize(pageSize)
+                .build();
+        return Result.success(userService.getUsers(query));
     }
 
-    /**
-     * 查询
-     * @param userCondition 查询条件
-     * @return 反序列化后为List<User>
-     */
-    @GetMapping("/api/v1/users/search")
-    public Result<String> searchUsers(@RequestParam String userCondition) {
-        List<User> userList = userService.searchUsers(userCondition);
-        if (userList == null || userList.isEmpty()) {
-            return Result.error("数据未获取成功，请重试");
-        }
-        try {
-            return Result.success(jacksonUtils.toJson(userList));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return Result.error(e.getMessage());
-        }
+    @GetMapping("/search")
+    public Result<List<UserRecordDTO>> searchUsers(@RequestParam("userCondition") String userCondition) {
+        return Result.success(userService.searchUsers(userCondition));
     }
 
-    /**
-     * 查询用户详细信息
-     * @param userId 用户ID主键
-     * @return 反序列化后为User
-     */
-    @GetMapping("/api/v1/users/{userId}")
-    public Result<String> getUserInfoById(@PathVariable String userId) {
-        User user = userService.getUserInfoById(userId);
-        if (user == null) {
-            return Result.error("数据未获取成功，请重试");
-        }
-        try {
-            return Result.success(jacksonUtils.toJson(user));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return Result.error(e.getMessage());
-        }
+    @GetMapping("/{userId}")
+    public Result<UserRecordDTO> getUserInfoById(@PathVariable("userId") String userId) {
+        return Result.success(userService.getUserInfoById(userId));
     }
 
-    /**
-     * 更新用户状态
-     * @param userId 用户ID主键
-     * @param status 用户状态
-     * @return 反序列化后为User
-     */
-    @PutMapping("/api/v1/users/{userId}")
-    public Result<String> updateUserStatus(@PathVariable String userId, @RequestParam String status) {
-        User user = userService.updateUserStatus(userId, status);
-        if (user == null) {
-            return Result.error("数据更新失败，请重试");
-        }
-        try {
-            return Result.success(jacksonUtils.toJson(user));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return Result.error(e.getMessage());
-        }
+    @PostMapping
+    public Result<UserRecordDTO> createUser(@RequestBody @Valid UserCreateDTO dto) {
+        return Result.success(userService.createUser(dto));
     }
-    
-    
+
+    @PutMapping("/{userId}")
+    public Result<UserRecordDTO> updateUser(@PathVariable("userId") String userId,
+                                            @RequestBody @Valid UserUpdateDTO dto) {
+        return Result.success(userService.updateUser(userId, dto));
+    }
+
+    @PatchMapping("/{userId}/status")
+    public Result<UserRecordDTO> updateUserStatus(@PathVariable("userId") String userId,
+                                                   @RequestParam("status") String status) {
+        return Result.success(userService.updateUserStatus(userId, status));
+    }
+
+    @PostMapping("/batch-status")
+    public Result<Void> updateBatchStatus(@RequestBody @Valid UserStatusBatchUpdateDTO dto) {
+        userService.updateBatchStatus(dto);
+        return Result.success();
+    }
+
+    @PostMapping("/{userId}/reset-password")
+    public Result<ResetPasswordResponseDTO> resetPassword(@PathVariable("userId") String userId) {
+        return Result.success(userService.resetPassword(userId));
+    }
 }
+

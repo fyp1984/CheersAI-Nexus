@@ -2,6 +2,7 @@ package com.cheersai.nexus.product.service;
 
 import com.cheersai.nexus.product.dto.ProductVersionCreateDTO;
 import com.cheersai.nexus.product.dto.ProductVersionDetailDTO;
+import com.cheersai.nexus.product.dto.ProductVersionUpdateDTO;
 import com.cheersai.nexus.product.entity.ProductVersion;
 import com.mybatisflex.core.service.IService;
 
@@ -25,22 +26,27 @@ public interface ProductVersionService extends IService<ProductVersion> {
     /**
      * 创建版本
      */
-    void createVersion(String productId, ProductVersionCreateDTO dto, String userId, String userName);
+    void createVersion(String productId, ProductVersionCreateDTO dto, String userId, String userName, String ipAddress);
 
     /**
      * 发布版本
      */
-    void publishVersion(String id);
+    void publishVersion(String productId, String id, String operatorId, String operatorName, String ipAddress);
 
     /**
      * 废弃版本
      */
-    void deprecateVersion(String id);
+    void deprecateVersion(String productId, String id, String operatorId, String operatorName, String ipAddress);
 
     /**
      * 删除版本
      */
-    void deleteVersion(String id);
+    void deleteVersion(String productId, String id, String operatorId, String operatorName, String ipAddress);
+
+    /**
+     * 编辑版本
+     */
+    void updateVersion(String productId, String versionId, ProductVersionUpdateDTO dto, String operatorId, String operatorName, String ipAddress);
 
     /**
      * 获取产品的最新版本

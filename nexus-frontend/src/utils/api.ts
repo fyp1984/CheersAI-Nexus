@@ -70,9 +70,22 @@ export function getErrorMessage(error: unknown, fallback: string) {
   if (error && typeof error === 'object') {
     const maybeError = error as {
       message?: string
-      response?: { data?: { message?: string } }
+      response?: { status?: number; data?: unknown }
     }
-    return maybeError.response?.data?.message || maybeError.message || fallback
+    const responseData = maybeError.response?.data
+    if (responseData && typeof responseData === 'object') {
+      const payload = responseData as { message?: string }
+      if (payload.message) {
+        return payload.message
+      }
+    }
+    if (maybeError.response?.status === 403) {
+      return '请求被拒绝，请检查登录状态或账号权限'
+    }
+    if (maybeError.response?.status && maybeError.response.status >= 500) {
+      return '服务器开小差了，请稍后重试'
+    }
+    return maybeError.message || fallback
   }
 
   return fallback

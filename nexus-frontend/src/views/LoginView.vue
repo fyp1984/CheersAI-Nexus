@@ -1,7 +1,8 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { login } from '../api/auth'
 import { DEV_LOGIN_IDENTITY, DEV_LOGIN_PASSWORD } from '../constants/auth'
 import { useAuthStore } from '../store/modules/auth'
@@ -10,34 +11,73 @@ import { getErrorMessage } from '../utils/api'
 const router = useRouter()
 const authStore = useAuthStore()
 
-const loginType = ref<'account' | 'email'>('account')
+const formRef = ref<FormInstance>()
 const loading = ref(false)
 const form = reactive({
   identity: DEV_LOGIN_IDENTITY,
   password: DEV_LOGIN_PASSWORD
 })
 
-const emailForm = reactive({
-  email: '',
-  code: '',
-  agree: true
-})
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const phonePattern = /^1[3-9]\d{9}$/
+const loginPasswordPattern = /^.{6,32}$/
 
-function handleLogin() {
-  if (loginType.value === 'account') {
-    if (!accountForm.account || !accountForm.password || !accountForm.captcha) {
-      ElMessage.warning('请填写账号登录所需信息')
-      return
+const rules: FormRules<typeof form> = {
+  identity: [
+    { required: true, message: '请输入邮箱或手机号', trigger: 'blur' },
+    {
+      validator: (_rule, value: string, callback) => {
+        const text = (value || '').trim()
+        if (!text) {
+          callback(new Error('请输入邮箱或手机号'))
+          return
+        }
+        if (text.includes('@')) {
+          if (!emailPattern.test(text)) {
+            callback(new Error('邮箱格式不正确'))
+            return
+          }
+          callback()
+          return
+        }
+        if (!phonePattern.test(text)) {
+          callback(new Error('手机号格式不正确'))
+          return
+        }
+        callback()
+      },
+      trigger: 'blur'
     }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    {
+      validator: (_rule, value: string, callback) => {
+        if (!loginPasswordPattern.test(value || '')) {
+          callback(new Error('密码格式不正确，请输入6-32位'))
+          return
+        }
+        callback()
+      },
+      trigger: 'blur'
+    }
+  ]
+}
+
+async function handleLogin() {
+  const valid = await formRef.value?.validate().catch(() => false)
+  if (!valid) {
+    return
+  }
+
+  const identity = form.identity.trim()
+  const payload: { email?: string; phone?: string; password: string } = {
+    password: form.password.trim()
+  }
+  if (emailPattern.test(identity)) {
+    payload.email = identity
   } else {
-    if (!emailForm.email || !emailForm.code) {
-      ElMessage.warning('请填写邮箱登录所需信息')
-      return
-    }
-    if (!emailForm.agree) {
-      ElMessage.warning('请先同意服务协议与隐私政策')
-      return
-    }
+    payload.phone = identity
   }
 
   loading.value = true
@@ -49,26 +89,12 @@ function handleLogin() {
       user: authData.user
     })
     ElMessage.success('登录成功')
-    router.push('/dashboard')
+    await router.push('/dashboard')
   } catch (error) {
-    ElMessage.error(getErrorMessage(error, '登录失败'))
+    ElMessage.error(getErrorMessage(error, '登录失败，请稍后重试'))
   } finally {
     loading.value = false
   }
-  if (smsCountdown.value > 0 || smsSending.value) return
-
-  smsSending.value = true
-  setTimeout(() => {
-    smsSending.value = false
-    smsCountdown.value = 60
-    ElMessage.success('验证码已发送（模拟）')
-    const timer = setInterval(() => {
-      smsCountdown.value -= 1
-      if (smsCountdown.value <= 0) {
-        clearInterval(timer)
-      }
-    }, 1000)
-  }, 400)
 }
 </script>
 
@@ -85,14 +111,15 @@ function handleLogin() {
         </div>
       </template>
 
-      <el-form label-position="top" @submit.prevent="handleLogin">
-        <el-form-item label="邮箱或手机号">
+      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @submit.prevent="handleLogin">
+        <el-form-item label="邮箱或手机号" prop="identity">
           <el-input v-model="form.identity" placeholder="请输入邮箱或手机号" clearable />
         </el-form-item>
-        <el-form-item label="密码">
+        <el-form-item label="密码" prop="password">
           <el-input v-model="form.password" type="password" show-password placeholder="请输入密码" />
         </el-form-item>
-        <el-button type="primary" class="submit-btn" :loading="loading" @click="handleLogin">登录</el-button>
+        <el-button native-type="submit" type="primary" class="submit-btn" :loading="loading">登录</el-button>
+      </el-form>
 
       <div class="dev-hint">开发环境已预置测试账号和密码，启动后点击登录即可直接进入页面检查。</div>
 
@@ -136,29 +163,6 @@ function handleLogin() {
   font-size: 13px;
 }
 
-.inline-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.inline-row.between {
-  justify-content: space-between;
-}
-
-.captcha-mock {
-  min-width: 96px;
-  height: 40px;
-  border-radius: 8px;
-  border: 1px dashed #c7d2fe;
-  color: #1d4ed8;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f8fbff;
-}
-
 .submit-btn {
   width: 100%;
 }
@@ -174,9 +178,5 @@ function handleLogin() {
   margin-top: 12px;
   display: flex;
   justify-content: flex-end;
-}
-
-.mb-16 {
-  margin-bottom: 16px;
 }
 </style>

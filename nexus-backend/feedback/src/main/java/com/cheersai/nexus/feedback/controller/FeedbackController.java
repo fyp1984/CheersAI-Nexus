@@ -38,11 +38,7 @@ public class FeedbackController {
      */
     @GetMapping("/{id}")
     public Result<Feedback> getFeedbackDetail(@PathVariable("id") UUID id) {
-        Feedback feedback = feedbackService.getById(id);
-        if (feedback == null) {
-            return Result.error("反馈不存在");
-        }
-        return Result.success(feedback);
+        return Result.success(feedbackService.getById(id));
     }
 
     /**

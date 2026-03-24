@@ -1,13 +1,31 @@
 package com.cheersai.nexus.user.service;
 
-import com.cheersai.nexus.common.model.usermanagement.User;
-import com.mybatisflex.core.paginate.Page;
+import com.cheersai.nexus.user.dto.ResetPasswordResponseDTO;
+import com.cheersai.nexus.user.dto.UserCreateDTO;
+import com.cheersai.nexus.user.dto.UserListQueryDTO;
+import com.cheersai.nexus.user.dto.UserListResponseDTO;
+import com.cheersai.nexus.user.dto.UserRecordDTO;
+import com.cheersai.nexus.user.dto.UserStatusBatchUpdateDTO;
+import com.cheersai.nexus.user.dto.UserUpdateDTO;
 
 import java.util.List;
 
 public interface UserService {
-    Page<User> getAllUsers(int pageNumber, int pageSize, int totalRow);
-    User getUserInfoById(String userId);
-    User updateUserStatus(String userId, String status);
-    List<User> searchUsers(String userCondition);
+
+    UserListResponseDTO getUsers(UserListQueryDTO queryDTO);
+
+    List<UserRecordDTO> searchUsers(String userCondition);
+
+    UserRecordDTO getUserInfoById(String userId);
+
+    UserRecordDTO createUser(UserCreateDTO dto);
+
+    UserRecordDTO updateUser(String userId, UserUpdateDTO dto);
+
+    UserRecordDTO updateUserStatus(String userId, String status);
+
+    void updateBatchStatus(UserStatusBatchUpdateDTO dto);
+
+    ResetPasswordResponseDTO resetPassword(String userId);
 }
+
