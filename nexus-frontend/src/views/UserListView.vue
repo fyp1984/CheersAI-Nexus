@@ -15,6 +15,7 @@ import {
   type UserRole,
   type UserStatus
 } from '../api/users'
+import { fetchSubscriptionAuditLogs } from '../api/membership'
 import { getErrorMessage } from '../utils/api'
 
 type EditMode = 'create' | 'edit'
@@ -61,6 +62,12 @@ const filters = reactive({
 
 const detailVisible = ref(false)
 const detailRecord = ref<UserRecord | null>(null)
+
+// 会员变更日志相关
+const auditLogVisible = ref(false)
+const auditLogLoading = ref(false)
+const auditLogList = ref<any[]>([])
+const currentAuditUserId = ref('')
 
 const editVisible = ref(false)
 const editMode = ref<EditMode>('create')
@@ -255,6 +262,54 @@ async function openDetailDialog(row: UserRecord) {
     ElMessage.error(getErrorMessage(error, '获取用户详情失败'))
   } finally {
     detailLoading.value = false
+  }
+}
+
+// 打开会员变更日志弹窗
+async function openAuditLogDialog(userId: string) {
+  if (!userId) return
+  currentAuditUserId.value = userId
+  auditLogVisible.value = true
+  auditLogLoading.value = true
+  try {
+    auditLogList.value = await fetchSubscriptionAuditLogs(userId)
+  } catch (error) {
+    auditLogList.value = []
+    ElMessage.error(getErrorMessage(error, '获取会员变更记录失败'))
+  } finally {
+    auditLogLoading.value = false
+  }
+}
+
+// 获取审计日志类型描述
+function getAuditLogTypeDesc(type?: string) {
+  const typeMap: Record<string, string> = {
+    'create': '开通会员',
+    'upgrade': '升级',
+    'downgrade': '降级',
+    'renew': '续费',
+    'cancel': '取消',
+    'expire': '过期',
+    'adjust': '手动调整'
+  }
+  return typeMap[type || ''] || type || '未知'
+}
+
+// 获取审计日志类型标签
+function getAuditLogTypeTag(type?: string) {
+  switch (type) {
+    case 'create':
+    case 'upgrade':
+    case 'renew':
+      return 'success'
+    case 'downgrade':
+    case 'cancel':
+    case 'expire':
+      return 'warning'
+    case 'adjust':
+      return 'primary'
+    default:
+      return 'info'
   }
 }
 
@@ -494,10 +549,11 @@ onMounted(async () => {
       <el-table-column label="最近登录" width="170" align="center">
         <template #default="{ row }">{{ formatTime(row.lastLoginAt) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="250" align="center">
+      <el-table-column label="操作" width="300" align="center">
         <template #default="{ row }">
           <el-button size="small" @click="openDetailDialog(row)">详情</el-button>
           <el-button size="small" type="primary" @click="openEditDialog(row)">编辑</el-button>
+          <el-button size="small" type="info" @click="openAuditLogDialog(row.userId)">会员日志</el-button>
           <el-button size="small" type="warning" @click="handleResetPassword(row)">重置密码</el-button>
         </template>
       </el-table-column>
@@ -542,6 +598,59 @@ onMounted(async () => {
       </el-descriptions>
       <template #footer>
         <el-button @click="detailVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 会员变更日志弹窗 -->
+    <el-dialog v-model="auditLogVisible" title="会员变更记录" width="800px">
+      <div class="audit-log-toolbar mb-10">
+        <span class="audit-user-info">用户ID: {{ currentAuditUserId }}</span>
+      </div>
+      <el-table
+        :data="auditLogList"
+        v-loading="auditLogLoading"
+        border
+        stripe
+        style="width: 100%"
+        :empty-text="auditLogList.length === 0 ? '暂无会员变更记录' : ''"
+      >
+        <el-table-column prop="createdAt" label="变更时间" width="180" align="center">
+          <template #default="{ row }">
+            {{ formatTime(row.createdAt) }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="operateType" label="变更类型" width="120" align="center">
+          <template #default="{ row }">
+            <el-tag :type="getAuditLogTypeTag(row.operateType)">
+              {{ getAuditLogTypeDesc(row.operateType) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="beforePlanCode" label="变更前方案" width="120" align="center">
+          <template #default="{ row }">
+            {{ row.beforePlanCode || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="afterPlanCode" label="变更后方案" width="120" align="center">
+          <template #default="{ row }">
+            {{ row.afterPlanCode || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="beforeEndDate" label="变更前到期日" width="140" align="center">
+          <template #default="{ row }">
+            {{ row.beforeEndDate ? formatTime(row.beforeEndDate) : '永久' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="afterEndDate" label="变更后到期日" width="140" align="center">
+          <template #default="{ row }">
+            {{ row.afterEndDate ? formatTime(row.afterEndDate) : '永久' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="operatorName" label="操作人" width="100" align="center" />
+        <el-table-column prop="reason" label="变更原因" min-width="150" />
+      </el-table>
+      <template #footer>
+        <el-button @click="auditLogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
 
@@ -707,5 +816,18 @@ onMounted(async () => {
   .stats-card {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
+
+/* 会员变更日志样式 */
+.audit-log-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.audit-user-info {
+  font-size: 14px;
+  color: #606266;
+  font-weight: 500;
 }
 </style>

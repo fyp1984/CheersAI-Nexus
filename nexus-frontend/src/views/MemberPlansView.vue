@@ -344,6 +344,72 @@
       </template>
     </el-dialog>
 
+    <!-- 审批弹窗 -->
+    <el-dialog v-model="approvalDialogVisible" title="审批会员计划变更" width="600px" center>
+      <div v-if="pendingAuditData" class="approval-content">
+        <el-alert
+          title="待审批变更详情"
+          type="info"
+          :closable="false"
+          class="mb-15"
+        />
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="申请人">{{ pendingAuditData.applicantName || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="申请时间">{{ formatDateTime(pendingAuditData.createdAt) }}</el-descriptions-item>
+          <el-descriptions-item label="申请类型">
+            <el-tag>{{ getAuditTypeDesc(pendingAuditData.applyType) }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="变更内容">
+            <div v-if="pendingAuditData.applyType === 'update'">
+              <div v-if="pendingAuditData.beforeData">
+                <strong>变更前：</strong>
+                <pre class="data-pre">{{ formatJsonData(pendingAuditData.beforeData) }}</pre>
+              </div>
+              <div v-if="pendingAuditData.afterData" class="mt-5">
+                <strong>变更后：</strong>
+                <pre class="data-pre">{{ formatJsonData(pendingAuditData.afterData) }}</pre>
+              </div>
+            </div>
+            <span v-else>-</span>
+          </el-descriptions-item>
+          <el-descriptions-item label="申请说明">{{ pendingAuditData.applyRemark || '无' }}</el-descriptions-item>
+        </el-descriptions>
+
+        <el-divider />
+
+        <el-form :model="approvalForm" label-width="80px">
+          <el-form-item label="审批结果">
+            <el-radio-group v-model="approvalForm.action">
+              <el-radio label="approve">通过</el-radio>
+              <el-radio label="reject">驳回</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item label="审批备注">
+            <el-input
+              v-model="approvalForm.auditRemark"
+              type="textarea"
+              placeholder="请输入审批备注"
+              :rows="3"
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+      <div v-else class="empty-approval">
+        <el-empty description="暂无待审批的变更记录" />
+      </div>
+      <template #footer>
+        <el-button @click="approvalDialogVisible = false">取消</el-button>
+        <el-button 
+          v-if="pendingAuditData" 
+          type="primary" 
+          @click="handleApprovalSubmit"
+          :loading="approvalLoading"
+        >
+          提交审批
+        </el-button>
+      </template>
+    </el-dialog>
+
     <!-- 操作日志弹窗 -->
     <!-- 需要后端接口支持 -->
     <!-- API: 暂未提供会员计划操作日志接口，需要新增 -->
@@ -623,6 +689,15 @@ const advancedVisible = ref(false)
 const userAdjustDialogVisible = ref(false)
 const logDialogVisible = ref(false)
 const logDetailDialogVisible = ref(false)
+const approvalDialogVisible = ref(false)
+const approvalLoading = ref(false)
+const pendingAuditData = ref<any>(null)
+const currentApprovalPlan = ref<any>(null)
+
+const approvalForm = reactive({
+  action: 'approve' as 'approve' | 'reject',
+  auditRemark: ''
+})
 
 // 当前权益配置行/当前日志
 const currentBenefitRow = ref<any>({})
@@ -737,8 +812,8 @@ const handleSave = async () => {
       const updateData: PlanUpdateDTO = {
         name: form.name,
         description: form.description,
-        priceMonthly: form.priceMonthly ? Number(form.priceMonthly) : undefined,
-        priceYearly: form.priceYearly ? Number(form.priceYearly) : undefined,
+        priceMonthly: form.priceMonthly !== '' ? Number(form.priceMonthly) : undefined,
+        priceYearly: form.priceYearly !== '' ? Number(form.priceYearly) : undefined,
         currency: form.currency,
         sortOrder: form.sortOrder ? Number(form.sortOrder) : undefined,
         status: form.status === 'enabled' ? 'active' : 'disabled',
@@ -758,7 +833,9 @@ const handleSave = async () => {
         priceYearly: form.priceYearly ? Number(form.priceYearly) : undefined,
         currency: form.currency,
         sortOrder: form.sortOrder ? Number(form.sortOrder) : 0,
-        status: form.status === 'enabled' ? 'active' : 'disabled'
+        status: form.status === 'enabled' ? 'active' : 'disabled',
+        features: JSON.stringify({ chat: true }),
+        limits: JSON.stringify({ tokens: 10000 })
       }
       await membershipApi.createPlan(createData)
       ElMessage.success('创建成功')
@@ -845,19 +922,52 @@ const handleUnlimitedChange = (item: any) => {
 }
 
 // 提交审批 - API: auditPlan() -> POST /api/v1/plans/{code}/audit
+// 先获取待审批记录，然后打开审批弹窗
 const handleApproveSubmit = async (row: any) => {
+  currentApprovalPlan.value = row
+  approvalForm.action = 'approve'
+  approvalForm.auditRemark = ''
+  
   try {
-    // API: auditPlan() -> POST /api/v1/plans/{code}/audit
+    // 先调用接口获取待审批记录
+    const pendingData = await membershipApi.fetchPendingAudit(row.code)
+    pendingAuditData.value = pendingData
+    approvalDialogVisible.value = true
+  } catch (error: any) {
+    ElMessage.error(error.message || '获取待审批记录失败')
+  }
+}
+
+// 提交审批结果
+const handleApprovalSubmit = async () => {
+  if (!currentApprovalPlan.value) return
+  
+  try {
+    approvalLoading.value = true
     const auditData: PlanAuditDTO = {
-      action: 'approve',
-      auditRemark: '自动审批通过'
+      action: approvalForm.action,
+      auditRemark: approvalForm.auditRemark
     }
-    await membershipApi.auditPlan(row.code, auditData)
-    ElMessage.success('已提交审批')
+    await membershipApi.auditPlan(currentApprovalPlan.value.code, auditData)
+    ElMessage.success(approvalForm.action === 'approve' ? '审批已通过' : '审批已驳回')
+    approvalDialogVisible.value = false
     await loadPlanList()
   } catch (error: any) {
     ElMessage.error(error.message || '提交审批失败')
+  } finally {
+    approvalLoading.value = false
   }
+}
+
+// 获取审批类型描述
+const getAuditTypeDesc = (type?: string) => {
+  const typeMap: Record<string, string> = {
+    'create': '创建',
+    'update': '更新',
+    'delete': '删除',
+    'status': '状态变更'
+  }
+  return typeMap[type || ''] || type || '未知'
 }
 
 // 高级筛选
@@ -1237,6 +1347,31 @@ watch([searchName, statusFilter, approveFilter], () => {
 
 .mt-10 {
   margin-top: 10px;
+}
+
+.mt-5 {
+  margin-top: 5px;
+}
+
+/* 审批弹窗样式 */
+.approval-content {
+  padding: 10px;
+}
+
+.data-pre {
+  font-size: 12px;
+  color: #606266;
+  background-color: #f5f7fa;
+  padding: 10px;
+  border-radius: 4px;
+  max-height: 150px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.empty-approval {
+  padding: 40px 0;
 }
 
 .pagination-container {
