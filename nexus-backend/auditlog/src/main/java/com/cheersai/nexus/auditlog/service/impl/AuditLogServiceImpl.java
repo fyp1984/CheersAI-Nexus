@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.cheersai.nexus.auditlog.entity.table.AuditLogTableDef.AUDIT_LOG;
+import com.mybatisflex.annotation.Table;
 
 /**
  * 审计日志业务逻辑实现类
@@ -46,26 +46,33 @@ public class AuditLogServiceImpl extends ServiceImpl<AuditLogMapper, AuditLog> i
 
     @Override
     public Map<String, Object> queryAuditLogs(AuditLogQueryDTO queryDTO) {
-        QueryWrapper queryWrapper = buildQueryWrapper(queryDTO);
+        // 先测试不使用分页，看能否查询到数据
+        QueryWrapper queryWrapper = QueryWrapper.create();
+        queryWrapper.from(AuditLog.class);
+        queryWrapper.orderBy("created_at desc");
+        
+        List<AuditLog> allLogs = this.mapper.selectListByQuery(queryWrapper);
+        long total = allLogs.size();
 
-        // 查询总数
-        long total = this.count(queryWrapper);
+        // 分页
+        int pageSize = queryDTO.getPageSize();
+        int page = queryDTO.getPage();
+        int fromIndex = (page - 1) * pageSize;
+        int toIndex = Math.min(fromIndex + pageSize, allLogs.size());
+        
+        List<AuditLog> pageLogs = fromIndex < allLogs.size() 
+            ? allLogs.subList(fromIndex, toIndex) 
+            : java.util.Collections.emptyList();
 
-        // 分页查询
-        int offset = (queryDTO.getPage() - 1) * queryDTO.getPageSize();
-        queryWrapper.limit(queryDTO.getPageSize(), offset);
-        queryWrapper.orderBy(AUDIT_LOG.CREATED_AT.desc());
-
-        List<AuditLog> logs = this.list(queryWrapper);
-        List<AuditLogDTO> dtoList = logs.stream()
+        List<AuditLogDTO> dtoList = pageLogs.stream()
                 .map(this::toAuditLogDTO)
                 .collect(Collectors.toList());
 
         Map<String, Object> result = new HashMap<>();
         result.put("list", dtoList);
         result.put("total", total);
-        result.put("page", queryDTO.getPage());
-        result.put("pageSize", queryDTO.getPageSize());
+        result.put("page", page);
+        result.put("pageSize", pageSize);
 
         return result;
     }
@@ -104,7 +111,7 @@ public class AuditLogServiceImpl extends ServiceImpl<AuditLogMapper, AuditLog> i
     @Override
     public List<AuditLogDTO> exportAuditLogs(AuditLogQueryDTO queryDTO) {
         QueryWrapper queryWrapper = buildQueryWrapper(queryDTO);
-        queryWrapper.orderBy(AUDIT_LOG.CREATED_AT.desc());
+        queryWrapper.orderBy("created_at desc");
 
         // 导出最多10000条
         queryWrapper.limit(10000);
@@ -127,59 +134,61 @@ public class AuditLogServiceImpl extends ServiceImpl<AuditLogMapper, AuditLog> i
             LocalDateTime cutoffDate = LocalDateTime.now().minusDays(retentionDays);
 
             QueryWrapper queryWrapper = QueryWrapper.create()
-                    .from(AUDIT_LOG)
-                    .where(AUDIT_LOG.LOG_TYPE.eq(logType))
-                    .and(AUDIT_LOG.CREATED_AT.lt(cutoffDate));
+                    .from(AuditLog.class)
+                    .where("log_type = ?", logType)
+                    .and("created_at < ?", cutoffDate);
 
+            long count = this.count(queryWrapper);
             this.remove(queryWrapper);
+            deletedCount += count;
         }
 
-        log.info("Cleaned expired audit logs");
+        log.info("Cleaned {} expired audit logs", deletedCount);
         return deletedCount;
     }
 
     private QueryWrapper buildQueryWrapper(AuditLogQueryDTO queryDTO) {
         QueryWrapper queryWrapper = QueryWrapper.create()
-                .from(AUDIT_LOG);
+                .from(AuditLog.class);
 
         if (StringUtils.hasText(queryDTO.getLogType())) {
-            queryWrapper.where(AUDIT_LOG.LOG_TYPE.eq(queryDTO.getLogType()));
+            queryWrapper.where("log_type = ?", queryDTO.getLogType());
         }
 
         if (StringUtils.hasText(queryDTO.getAction())) {
-            queryWrapper.and(AUDIT_LOG.ACTION.like(queryDTO.getAction(), StringUtils.hasText(queryDTO.getAction())));
+            queryWrapper.and("action like ?", "%" + queryDTO.getAction() + "%");
         }
 
         if (StringUtils.hasText(queryDTO.getOperatorId())) {
-            queryWrapper.where(AUDIT_LOG.OPERATOR_ID.eq(queryDTO.getOperatorId()));
+            queryWrapper.where("operator_id = ?", queryDTO.getOperatorId());
         }
 
         if (StringUtils.hasText(queryDTO.getOperatorName())) {
-            queryWrapper.and(AUDIT_LOG.OPERATOR_NAME.like(queryDTO.getOperatorName(), StringUtils.hasText(queryDTO.getOperatorName())));
+            queryWrapper.and("operator_name like ?", "%" + queryDTO.getOperatorName() + "%");
         }
 
         if (StringUtils.hasText(queryDTO.getTargetType())) {
-            queryWrapper.where(AUDIT_LOG.TARGET_TYPE.eq(queryDTO.getTargetType()));
+            queryWrapper.where("target_type = ?", queryDTO.getTargetType());
         }
 
         if (StringUtils.hasText(queryDTO.getTargetId())) {
-            queryWrapper.where(AUDIT_LOG.TARGET_ID.eq(queryDTO.getTargetId()));
+            queryWrapper.where("target_id = ?", queryDTO.getTargetId());
         }
 
         if (StringUtils.hasText(queryDTO.getIpAddress())) {
-            queryWrapper.and(AUDIT_LOG.IP_ADDRESS.like(queryDTO.getIpAddress(), StringUtils.hasText(queryDTO.getIpAddress())));
+            queryWrapper.and("ip_address like ?", "%" + queryDTO.getIpAddress() + "%");
         }
 
         if (StringUtils.hasText(queryDTO.getResult())) {
-            queryWrapper.where(AUDIT_LOG.RESULT.eq(queryDTO.getResult()));
+            queryWrapper.where("result = ?", queryDTO.getResult());
         }
 
         if (queryDTO.getStartTime() != null) {
-            queryWrapper.and(AUDIT_LOG.CREATED_AT.ge(queryDTO.getStartTime()));
+            queryWrapper.and("created_at >= ?", queryDTO.getStartTime());
         }
 
         if (queryDTO.getEndTime() != null) {
-            queryWrapper.and(AUDIT_LOG.CREATED_AT.le(queryDTO.getEndTime()));
+            queryWrapper.and("created_at <= ?", queryDTO.getEndTime());
         }
 
         return queryWrapper;

@@ -21,6 +21,14 @@ export default defineConfig({
       '/api/v1/products': {
         target: 'http://localhost:8085',
         changeOrigin: true
+      },
+      '/api/v1/plans': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      '/api/v1/audit': {
+        target: 'http://localhost:8081',
+        changeOrigin: true
       }
     }
   }
