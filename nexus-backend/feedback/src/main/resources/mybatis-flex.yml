@@ -1,0 +1,14 @@
+# 仅用于生成表定义，测试项目可省略，直接使用下面的FeedbackTableDef.java
+mybatisflex:
+  generator:
+    package:
+      entity: com.cheersai.nexus.feedback.entity
+      tableDef: com.cheersai.nexus.feedback.entity.table
+    datasource:
+      url: jdbc:postgresql://localhost:5432/postgres
+      username: postgres
+      password: postgres
+      driver-class-name: org.postgresql.Driver
+    tables:
+      - table-name: feedbacks
+        entity-name: Feedback
