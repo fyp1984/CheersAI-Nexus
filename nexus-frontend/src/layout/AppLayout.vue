@@ -17,7 +17,6 @@ const menus = [
   { index: '/pricing/config', label: '功能定价' },
   { index: '/user/list', label: '用户管理' },
   { index: '/member/plans', label: '会员管理' },
-  { index: '/subscription/management', label: '订阅管理' },
   { index: '/feedback/list', label: '用户反馈' },
   { index: '/audit/logs', label: '审计日志' },
   { index: '/notice/list', label: '公告系统' },

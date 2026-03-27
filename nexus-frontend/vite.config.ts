@@ -7,11 +7,11 @@ export default defineConfig({
   server: {
     proxy: {
       '/api/v1/auth': {
-        target: 'http://localhost:8086',
+        target: 'http://localhost:8082',
         changeOrigin: true
       },
       '/api/v1/users': {
-        target: 'http://localhost:8081',
+        target: 'http://localhost:8083',
         changeOrigin: true
       },
       '/api/v1/feedbacks': {
@@ -23,15 +23,11 @@ export default defineConfig({
         changeOrigin: true
       },
       '/api/v1/plans': {
-        target: 'http://localhost:8083',
-        changeOrigin: true
-      },
-      '/api/v1/subscriptions': {
-        target: 'http://localhost:8083',
+        target: 'http://localhost:8080',
         changeOrigin: true
       },
       '/api/v1/audit': {
-        target: 'http://localhost:8087',
+        target: 'http://localhost:8081',
         changeOrigin: true
       }
     }
