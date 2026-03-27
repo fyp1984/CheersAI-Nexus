@@ -133,15 +133,19 @@
     </el-table>
     <!-- 分页器 -->
     <div class="pagination-container">
-      <el-pagination
-        v-model:current-page="pagination.page"
-        v-model:page-size="pagination.pageSize"
-        :page-sizes="[10, 20, 50, 100]"
-        :total="total"
-        layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleSizeChange"
-        @current-change="handlePageChange"
-      />
+
+<!-- 分页器 -->
+<div class="pagination-container">
+  <el-pagination
+    v-model:current-page="pagination.page"
+    v-model:page-size="pagination.pageSize"
+    :page-sizes="[10, 20, 50, 100]"
+    :total="total"
+    layout="total, sizes, prev, pager, next, jumper"
+    @update:current-page="handlePageChange"
+    @update:page-size="handleSizeChange"
+  />
+</div>
     </div>
     <!-- 日志详情弹窗 -->
     <el-dialog v-model="detailDialogVisible" title="日志详情" width="800px" center>
@@ -309,11 +313,12 @@ const handleReset = () => {
   pagination.page = 1
   loadData()
 }
-// 分页变化
+// 分页变化（页码）
 const handlePageChange = (page: number) => {
   pagination.page = page
   loadData()
 }
+
 // 每页数量变化
 const handleSizeChange = (size: number) => {
   pagination.pageSize = size
