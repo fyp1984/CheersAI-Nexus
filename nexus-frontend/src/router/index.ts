@@ -50,12 +50,6 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '会员管理', priority: 'P0' }
       },
       {
-        path: 'subscription/management',
-        name: 'SubscriptionManagement',
-        component: () => import('../views/SubscriptionManagementView.vue'),
-        meta: { title: '订阅管理', priority: 'P1' }
-      },
-      {
         path: 'feedback/list',
         name: 'FeedbackList',
         component: () => import('../views/FeedbackListView.vue'),
