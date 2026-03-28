@@ -4,6 +4,7 @@ import { ElMessage } from 'element-plus'
 import { useRoute, useRouter } from 'vue-router'
 import { logout } from '../api/auth'
 import { useAuthStore } from '../store/modules/auth'
+import LogoPng from '../assets/logo.png'
 
 const route = useRoute()
 const router = useRouter()
@@ -39,7 +40,9 @@ async function handleLogout() {
   <el-container class="app-layout">
     <el-aside width="256px" class="layout-aside">
       <div class="logo-area">
-        <div class="logo-badge">C</div>
+        <div class="logo-badge">
+          <img :src="LogoPng" alt="CheersAI Nexus" class="logo-img" />
+        </div>
         <div class="logo-text">
           <span class="logo-name">CheersAI Nexus</span>
           <span class="logo-slogan">安全可控的AI协作平台</span>
@@ -94,25 +97,28 @@ async function handleLogout() {
 }
 
 .logo-area {
-  height: 64px;
+  height: 108px;
   display: flex;
   align-items: center;
   padding: 0 16px;
-  gap: 12px;
+  gap: 14px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .logo-badge {
-  width: 36px;
-  height: 36px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  width: 56px;
+  height: 56px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-weight: 700;
-  font-size: 18px;
+  overflow: hidden;
+}
+
+.logo-img {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
 }
 
 .logo-text {
