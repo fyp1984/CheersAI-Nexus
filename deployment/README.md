@@ -110,7 +110,7 @@ cd deployment/scripts
 
 **Windows:**
 - Windows 10/11 或 Windows Server
-- Java 21 (JDK)
+- Java 21 (推荐BellSoft JDK)
 - Node.js 20+
 - Maven 3.9+
 
@@ -124,12 +124,7 @@ cd deployment/scripts
 
 - Linux (CentOS/RHEL/Ubuntu)
 - Java 21
-- PostgreSQL 16 (自带源安装)
-- Redis 7 (自带源安装)
+- PostgreSQL 16
+- Redis 7
 - Nginx 1.20+
-- SSL 证书 (已有)
-
-**数据库配置：**
-- PostgreSQL 密码: cheersai
-- Redis 密码: cheersai
-- 支持 SSH 隧道连接
+- SSL 证书
