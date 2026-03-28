@@ -3,9 +3,9 @@ spring:
     name: feedback
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: ${FEEDBACK_DB_URL:jdbc:postgresql://localhost:15432/nexus}
+    url: ${FEEDBACK_DB_URL:jdbc:postgresql://localhost:5432/cheersai}
     username: ${FEEDBACK_DB_USERNAME:postgres}
-    password: ${FEEDBACK_DB_PASSWORD:postgres}
+    password: ${FEEDBACK_DB_PASSWORD:021003st}
   flyway:
     enabled: true
     locations: classpath:db/migration
@@ -14,7 +14,7 @@ spring:
     table: flyway_schema_history_feedback
 
 server:
-  port: ${FEEDBACK_PORT:8084}
+  port: ${FEEDBACK_PORT:8083}
 
 mybatis-flex:
   mapper-locations:

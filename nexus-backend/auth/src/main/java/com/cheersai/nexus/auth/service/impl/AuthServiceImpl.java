@@ -90,7 +90,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 创建用户
         User user = User.builder()
-                .userId(UUID.randomUUID().toString())
+                .id(UUID.randomUUID().toString())
                 .email(email)
                 .phone(phone)
                 .username(username)
@@ -104,7 +104,7 @@ public class AuthServiceImpl implements AuthService {
         userMapper.insert(user);
 
         // 记录审计日志
-        saveAuditLog(user.getUserId(), "register", ipAddress, userAgent, true, null);
+        // saveAuditLog(user.getId(), "register", ipAddress, userAgent, true, null);
 
         // 生成 Token
         return generateTokens(user, ipAddress, userAgent);
@@ -129,19 +129,19 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (user == null) {
-            saveAuditLog(null, "login", ipAddress, userAgent, false, "用户不存在");
+            // saveAuditLog(null, "login", ipAddress, userAgent, false, "用户不存在");
             throw new AuthBusinessException(AuthErrorCode.LOGIN_FAILED);
         }
 
         // 验证密码
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            saveAuditLog(user.getUserId(), "login", ipAddress, userAgent, false, "密码错误");
+            // saveAuditLog(user.getId(), "login", ipAddress, userAgent, false, "密码错误");
             throw new AuthBusinessException(AuthErrorCode.LOGIN_FAILED);
         }
 
         // 检查用户状态
         if (!"active".equals(user.getStatus())) {
-            saveAuditLog(user.getUserId(), "login", ipAddress, userAgent, false, "用户状态异常");
+            // saveAuditLog(user.getId(), "login", ipAddress, userAgent, false, "用户状态异常");
             throw new AuthBusinessException(AuthErrorCode.ACCOUNT_DISABLED);
         }
 
@@ -151,7 +151,7 @@ public class AuthServiceImpl implements AuthService {
         userMapper.update(user);
 
         // 记录审计日志
-        saveAuditLog(user.getUserId(), "login", ipAddress, userAgent, true, null);
+        // saveAuditLog(user.getId(), "login", ipAddress, userAgent, true, null);
 
         // 生成 Token
         return generateTokens(user, ipAddress, userAgent);
@@ -243,33 +243,33 @@ public class AuthServiceImpl implements AuthService {
      */
     private AuthResponse generateTokens(User user, String ipAddress, String userAgent) {
         String accessToken = jwtUtil.generateAccessToken(
-                user.getUserId(),
+                user.getId(),
                 user.getEmail(),
                 user.getNickname() != null ? user.getNickname() : user.getUsername(),
                 "free" // 默认计划
         );
 
-        String refreshToken = jwtUtil.generateRefreshToken(user.getUserId());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId());
 
         String idToken = jwtUtil.generateIdToken(
-                user.getUserId(),
+                user.getId(),
                 user.getEmail(),
                 user.getNickname() != null ? user.getNickname() : user.getUsername(),
                 "free"
         );
 
         // 存储 Token 到 Redis
-        tokenRepository.saveAccessToken(user.getUserId(), accessToken, jwtProperties.getAccessTokenExpiration() / 1000);
-        tokenRepository.saveRefreshToken(user.getUserId(), refreshToken, jwtProperties.getRefreshTokenExpiration() / 1000);
+        tokenRepository.saveAccessToken(user.getId(), accessToken, jwtProperties.getAccessTokenExpiration() / 1000);
+        tokenRepository.saveRefreshToken(user.getId(), refreshToken, jwtProperties.getRefreshTokenExpiration() / 1000);
 
         // 保存 Refresh Token 到数据库
-        RefreshToken token = RefreshToken.builder()
-                .id(UUID.randomUUID().toString())
-                .userId(user.getUserId())
-                .token(refreshToken)
-                .expiresAt(LocalDateTime.now().plus(Duration.ofMillis(jwtProperties.getRefreshTokenExpiration())))
-                .build();
-        refreshTokenMapper.insert(token);
+//        RefreshToken token = RefreshToken.builder()
+//                .id(UUID.randomUUID().toString())
+//                .userId(user.getId())
+//                .token(refreshToken)
+//                .expiresAt(LocalDateTime.now().plus(Duration.ofMillis(jwtProperties.getRefreshTokenExpiration())))
+//                .build();
+//        refreshTokenMapper.insert(token);
 
         return AuthResponse.builder()
                 .accessToken(accessToken)
@@ -278,7 +278,7 @@ public class AuthServiceImpl implements AuthService {
                 .expiresIn(jwtProperties.getAccessTokenExpiration() / 1000)
                 .tokenType("Bearer")
                 .user(UserInfo.builder()
-                        .id(user.getUserId())
+                        .id(user.getId())
                         .email(user.getEmail())
                         .phone(user.getPhone())
                         .username(user.getUsername())
@@ -295,12 +295,12 @@ public class AuthServiceImpl implements AuthService {
                               String userAgent, boolean success, String details) {
         AuditLog auditLog = AuditLog.builder()
                 .id(UUID.randomUUID().toString())
-                .userId(userId)
+                .operatorId(userId)
                 .action(action)
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
-                .success(success)
-                .details(details)
+                .result("success")
+                .afterData(details)
                 .build();
         auditLogMapper.insert(auditLog);
     }

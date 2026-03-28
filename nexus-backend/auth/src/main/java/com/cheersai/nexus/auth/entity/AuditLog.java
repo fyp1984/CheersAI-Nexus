@@ -1,5 +1,6 @@
 package com.cheersai.nexus.auth.entity;
 
+import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.Table;
 import lombok.AllArgsConstructor;
@@ -13,13 +14,25 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("audit_logs")
+@Table("nexus.audit_logs")
 public class AuditLog {
 
     @Id
     private String id;
 
-    private String userId;
+    private String logType;
+    
+    private String operatorId;
+
+    private String operatorName;
+
+    private String targetType;
+
+    private String targetID;
+    
+    private String beforeData;
+    
+    private String afterData;
 
     private String action;  // login, logout, register, password_reset, etc.
 
@@ -28,9 +41,9 @@ public class AuditLog {
     private String userAgent;
 
     @Builder.Default
-    private Boolean success = true;
+    private String result = "success";
 
-    private String details; // JSON
+    private String errorMessage;
 
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

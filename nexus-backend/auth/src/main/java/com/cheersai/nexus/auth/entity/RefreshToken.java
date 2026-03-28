@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("refresh_tokens")
+@Table("nexus.refresh_tokens")
 public class RefreshToken {
 
     @Id

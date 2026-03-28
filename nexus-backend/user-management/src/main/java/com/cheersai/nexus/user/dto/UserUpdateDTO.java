@@ -1,5 +1,6 @@
 package com.cheersai.nexus.user.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -35,5 +36,6 @@ public class UserUpdateDTO {
 
     private String memberPlanCode;
 
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime memberExpireAt;
 }

@@ -4,6 +4,7 @@ import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedJdbcTypes;
 import org.apache.ibatis.type.MappedTypes;
+import org.springframework.context.annotation.Configuration;
 
 import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
@@ -16,6 +17,7 @@ import java.sql.Types;
  */
 @MappedTypes(String.class)
 @MappedJdbcTypes(JdbcType.OTHER)
+@Configuration
 public class PostgreSqlJsonbTypeHandler extends BaseTypeHandler<String> {
 
     @Override

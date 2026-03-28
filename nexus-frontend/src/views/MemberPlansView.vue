@@ -120,10 +120,11 @@
           <el-button size="small" type="primary" icon="el-icon-edit" @click="openDialog(scope.row)" :disabled="scope.row.auditStatus === 'pending'">
             编辑
           </el-button>
-          <el-dropdown @command="(cmd) => handleAction(cmd, scope.row)">
+          <el-dropdown @command="(cmd: string) => handleAction(cmd, scope.row)">
             <el-button size="small" type="text" icon="el-icon-more">更多</el-button>
             <template #dropdown>
               <el-dropdown-item command="benefit" icon="el-icon-s-data">权益配置</el-dropdown-item>
+              <el-dropdown-item command="log" icon="el-icon-document">操作日志</el-dropdown-item>
               <el-dropdown-item command="approve" icon="el-icon-check" v-if="scope.row.auditStatus !== 'approved'">提交审批</el-dropdown-item>
               <el-dropdown-item
                 command="delete"
@@ -572,7 +573,7 @@ import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Setting } from '@element-plus/icons-vue'
 import * as membershipApi from '../api/membership'
-import type { PlanDetailDTO, PlanCreateDTO, PlanUpdateDTO, PlanAuditDTO } from '../api/membership'
+import type { PlanDetailDTO, PlanCreateDTO, PlanUpdateDTO, PlanAuditDTO, BenefitItem } from '../api/membership'
 
 // ========== API 接口说明 ==========
 // 会员计划相关 API（已实现）：
@@ -583,19 +584,18 @@ import type { PlanDetailDTO, PlanCreateDTO, PlanUpdateDTO, PlanAuditDTO } from '
 // - DELETE /api/v1/plans/{code}      - deletePlan()             - 删除会员计划
 // - POST   /api/v1/plans/{code}/audit - auditPlan()            - 审批会员计划变更
 // - GET    /api/v1/plans/{code}/pending-audit - fetchPendingAudit() - 获取待审批记录
+// - GET    /api/v1/plans/{code}/benefits - fetchPlanBenefits() - 获取权益配置
+// - PUT    /api/v1/plans/{code}/benefits - updatePlanBenefits() - 更新权益配置
+// - GET    /api/v1/plans/{code}/audit-logs - fetchPlanAuditLogs() - 获取操作日志
 //
 // 订阅相关 API（已实现）：
 // - GET    /api/v1/users/{userId}/subscription - fetchUserSubscription()   - 获取用户订阅信息
 // - POST   /api/v1/users/{userId}/subscription/adjust - adjustUserSubscription() - 调整用户订阅
-//
-// 需要新增的后端接口：
-// - GET    /api/v1/audit-logs         - 会员计划操作日志查询
-// - GET    /api/v1/plans/{code}/benefits - 获取权益配置
-// - PUT    /api/v1/plans/{code}/benefits - 更新权益配置
 
 // loading 状态
 const loading = ref(false)
 const logLoading = ref(false)
+const saving = ref(false)
 
 // 会员计划列表数据类型
 interface PlanListItem extends PlanDetailDTO {
@@ -739,16 +739,8 @@ const advancedForm = reactive({
   auditStatus: [] as string[]
 })
 
-// 权益配置列表 - 需要从后端获取
-// API: 暂未提供，需要新增 GET /api/v1/plans/{code}/benefits
-const benefitList = ref([
-  { key: 'b1', name: '对话次数提升', type: 'input', enabled: true, value: 1000, min: 0 },
-  { key: 'b2', name: '优先响应', type: 'switch', enabled: false, value: 0 },
-  { key: 'b3', name: '高级模型权限', type: 'switch', enabled: false, value: 0 },
-  { key: 'b4', name: '数据存储容量', type: 'unlimited', enabled: true, unlimited: false, value: 10, min: 1 },
-  { key: 'b5', name: 'API调用次数', type: 'input', enabled: true, value: 5000, min: 0 },
-  { key: 'b6', name: '团队成员数量', type: 'input', enabled: true, value: 10, min: 1 }
-])
+// 权益配置列表 - 从后端获取
+const benefitList = ref<BenefitItem[]>([])
 
 // 手动调整用户会员表单
 const adjustForm = reactive({
@@ -898,20 +890,56 @@ const handleSelectionChange = (rows: any) => {
   selectedRows.value = rows
 }
 
-// 打开权益配置弹窗 - API: 需要新增 GET /api/v1/plans/{code}/benefits
-const openBenefitDialog = (row: any) => {
+// 打开权益配置弹窗 - API: fetchPlanBenefits()
+const openBenefitDialog = async (row: any) => {
   currentBenefitRow.value = row
-  // TODO: 从后端获取权益配置
-  // API: 暂未提供，需要新增 GET /api/v1/plans/{code}/benefits
+  try {
+    const data = await membershipApi.fetchPlanBenefits(row.code)
+    benefitList.value = data.benefits && data.benefits.length > 0 
+      ? data.benefits.map((item: any) => ({
+          key: item.key || item.name,
+          name: item.name,
+          description: item.description,
+          type: item.type || 'switch',
+          enabled: item.enabled ?? true,
+          value: item.value ?? 0,
+          min: item.min ?? 0,
+          unlimited: item.unlimited ?? false,
+          planCodes: item.planCodes ?? []
+        }))
+      : getDefaultBenefits()
+  } catch (error: any) {
+    benefitList.value = getDefaultBenefits()
+    ElMessage.warning('获取权益配置失败，使用默认值')
+  }
   benefitDialogVisible.value = true
 }
 
-// 保存权益配置 - API: 需要新增 PUT /api/v1/plans/{code}/benefits
-const saveBenefit = () => {
-  // TODO: 调用后端接口保存权益配置
-  // API: 暂未提供，需要新增 PUT /api/v1/plans/{code}/benefits
-  ElMessage.success('权益配置已保存')
-  benefitDialogVisible.value = false
+// 保存权益配置 - API: updatePlanBenefits()
+const saveBenefit = async () => {
+  if (!currentBenefitRow.value) return
+  saving.value = true
+  try {
+    await membershipApi.updatePlanBenefits(currentBenefitRow.value.code, benefitList.value)
+    ElMessage.success('权益配置已保存')
+    benefitDialogVisible.value = false
+  } catch (error: any) {
+    ElMessage.error(error.message || '保存权益配置失败')
+  } finally {
+    saving.value = false
+  }
+}
+
+// 获取默认权益配置
+function getDefaultBenefits(): BenefitItem[] {
+  return [
+    { key: 'b1', name: '对话次数提升', type: 'input', enabled: true, value: 1000, min: 0 },
+    { key: 'b2', name: '优先响应', type: 'switch', enabled: false, value: 0 },
+    { key: 'b3', name: '高级模型权限', type: 'switch', enabled: false, value: 0 },
+    { key: 'b4', name: '数据存储容量', type: 'unlimited', enabled: true, unlimited: false, value: 10, min: 1 },
+    { key: 'b5', name: 'API调用次数', type: 'input', enabled: true, value: 5000, min: 0 },
+    { key: 'b6', name: '团队成员数量', type: 'input', enabled: true, value: 10, min: 1 }
+  ]
 }
 
 // 无限额开关变更
@@ -991,15 +1019,6 @@ const applyAdvancedFilter = () => {
   // 可以通过调用 API 时传递筛选参数实现
   advancedVisible.value = false
   ElMessage.success('筛选已应用')
-}
-
-// 打开操作日志 - API: 需要新增 GET /api/v1/audit-logs
-const openLog = () => {
-  // TODO: 调用后端接口获取操作日志
-  // API: 暂未提供，需要新增 GET /api/v1/audit-logs 或 GET /api/v1/plans/audit-logs
-  logList.value = []
-  logTotal.value = 0
-  logDialogVisible.value = true
 }
 
 // 打开日志详情
@@ -1104,6 +1123,25 @@ const handleAction = (cmd: string, row: any) => {
     handleDelete(row)
   } else if (cmd === 'approve') {
     handleApproveSubmit(row)
+  } else if (cmd === 'log') {
+    openLog(row.code)
+  }
+}
+
+// 打开操作日志 - API: fetchPlanAuditLogs()
+const openLog = async (planCode: string) => {
+  logLoading.value = true
+  logDialogVisible.value = true
+  try {
+    const data = await membershipApi.fetchPlanAuditLogs(planCode)
+    logList.value = data.items || []
+    logTotal.value = data.total || 0
+  } catch (error: any) {
+    logList.value = []
+    logTotal.value = 0
+    ElMessage.error(error.message || '获取操作日志失败')
+  } finally {
+    logLoading.value = false
   }
 }
 

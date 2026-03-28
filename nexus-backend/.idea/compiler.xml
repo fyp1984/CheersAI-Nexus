@@ -9,19 +9,12 @@
         <outputRelativeToContentRoot value="true" />
         <module name="feedback" />
         <module name="product" />
-        <module name="membership" />
         <module name="common" />
         <module name="auditlog" />
-      </profile>
-      <profile name="Annotation profile for nexus-backend" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" />
-        </processorPath>
         <module name="user-management" />
         <module name="auth" />
+        <module name="membership" />
+        <module name="system-config" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel target="21" />
@@ -35,6 +28,7 @@
       <module name="membership" options="-parameters" />
       <module name="nexus-backend" options="-parameters" />
       <module name="product" options="-parameters" />
+      <module name="system-config" options="-parameters" />
       <module name="user-management" options="-parameters" />
     </option>
   </component>

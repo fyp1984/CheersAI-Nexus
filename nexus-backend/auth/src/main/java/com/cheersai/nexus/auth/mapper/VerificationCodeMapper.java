@@ -9,6 +9,6 @@ import org.apache.ibatis.annotations.Update;
 @Mapper
 public interface VerificationCodeMapper extends BaseMapper<VerificationCode> {
 
-    @Update("UPDATE verification_codes SET used = TRUE WHERE target = #{target} AND purpose = #{purpose} AND used = FALSE")
+    @Update("UPDATE nexus.verification_codes SET used = TRUE WHERE target = #{target} AND purpose = #{purpose} AND used = FALSE")
     int markUsedByTargetAndPurpose(@Param("target") String target, @Param("purpose") String purpose);
 }

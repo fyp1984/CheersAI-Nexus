@@ -20,5 +20,9 @@ public class UserStatusBatchUpdateDTO {
 
     @NotBlank(message = "状态不能为空")
     private String status;
+
+    public List<String> getIds() {
+        return this.userIds;
+    }
 }
 

@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("subscription_audit_logs")
+@Table("nexus.subscription_audit_logs")
 public class SubscriptionAuditLog {
 
     /**

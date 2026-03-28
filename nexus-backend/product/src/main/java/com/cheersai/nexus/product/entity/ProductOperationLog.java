@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("product_operation_logs")
+@Table("nexus.product_operation_logs")
 public class ProductOperationLog {
 
     @Id(keyType = KeyType.Generator, value = "uuid")

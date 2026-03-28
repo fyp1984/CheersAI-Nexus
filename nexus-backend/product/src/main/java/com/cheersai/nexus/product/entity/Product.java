@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("products")
+@Table("nexus.products")
 public class Product {
 
     /**

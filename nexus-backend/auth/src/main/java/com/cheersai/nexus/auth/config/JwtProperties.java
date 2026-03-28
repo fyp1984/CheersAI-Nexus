@@ -13,7 +13,12 @@ public class JwtProperties {
     private String audience;
     private String privateKey;
     private String publicKey;
-    private long accessTokenExpiration;
-    private long refreshTokenExpiration;
-    private long idTokenExpiration;
+    // Access Token：2 小时，API 访问凭证（单位：毫秒）
+    private long accessTokenExpiration = 2 * 60 * 60 * 1000L;
+
+    // Refresh Token：7 天，刷新 Access Token
+    private long refreshTokenExpiration = 7 * 24 * 60 * 60 * 1000L;
+
+    // ID Token：2 小时，用户身份信息
+    private long idTokenExpiration = 2 * 60 * 60 * 1000L;
 }

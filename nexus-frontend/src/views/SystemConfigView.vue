@@ -124,7 +124,7 @@
           <el-table-column prop="createTime" label="添加时间" width="180" align="center" />
           <el-table-column label="操作" width="100" align="center">
             <template #default="scope">
-              <el-button type="danger" size="small" @click="removeIp(scope.$index)">删除</el-button>
+              <el-button type="danger" size="small" @click="removeIp(scope.row.ip)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -133,15 +133,19 @@
 
     <div class="footer-actions">
       <el-button @click="resetConfig">重置</el-button>
-      <el-button type="primary" @click="saveConfig">保存配置</el-button>
+      <el-button type="primary" :loading="saving" @click="saveConfig">保存配置</el-button>
     </div>
   </el-card>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import * as systemConfigApi from '../api/system-config'
+import type { SystemConfigDTO } from '../api/system-config'
 
+const loading = ref(false)
+const saving = ref(false)
 const activeTab = ref('register')
 const newIp = ref('')
 
@@ -170,12 +174,52 @@ const tokenForm = reactive({
   idleTimeoutMinutes: 120
 })
 
-const ipWhitelist = ref([
-  { ip: '192.168.1.100', remark: '运维办公网段', createTime: '2026-03-15 10:20' },
-  { ip: '10.10.20.8', remark: '内网堡垒机', createTime: '2026-03-16 14:45' }
-])
+const ipWhitelist = ref<Array<{ ip: string; remark: string; createTime: string }>>([])
 
-function handleAddIp() {
+// 加载系统配置
+async function loadConfig() {
+  loading.value = true
+  try {
+    const data = await systemConfigApi.fetchSystemConfig()
+    
+    // 设置注册配置
+    if (data.register) {
+      registerForm.registerMethods = data.register.registerMethods || ['邮箱', '手机号']
+      registerForm.forceEmailVerify = data.register.forceEmailVerify ?? true
+      registerForm.needInviteCode = data.register.needInviteCode ?? false
+      registerForm.defaultMemberPlan = data.register.defaultMemberPlan || '免费版'
+      registerForm.autoActivate = data.register.autoActivate ?? true
+    }
+    
+    // 设置安全配置
+    if (data.security) {
+      securityForm.loginMode = data.security.loginMode || '混合模式'
+      securityForm.enableCaptcha = data.security.enableCaptcha ?? true
+      securityForm.failLockThreshold = data.security.failLockThreshold ?? 5
+      securityForm.lockMinutes = data.security.lockMinutes ?? 30
+      securityForm.enable2FA = data.security.enable2FA ?? false
+      securityForm.passwordPolicy = data.security.passwordPolicy || ['至少 8 位', '包含数字', '包含特殊字符']
+    }
+    
+    // 设置Token配置
+    if (data.token) {
+      tokenForm.accessTokenHours = data.token.accessTokenHours ?? 2
+      tokenForm.refreshTokenDays = data.token.refreshTokenDays ?? 7
+      tokenForm.maxSessionCount = data.token.maxSessionCount ?? 3
+      tokenForm.notifyLoginFromNewIp = data.token.notifyLoginFromNewIp ?? true
+      tokenForm.idleTimeoutMinutes = data.token.idleTimeoutMinutes ?? 120
+    }
+    
+    // 设置IP白名单
+    ipWhitelist.value = data.ipWhitelist || []
+  } catch (error: any) {
+    ElMessage.error(error.message || '加载系统配置失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function handleAddIp() {
   const ip = newIp.value.trim()
   const ipReg = /^(25[0-5]|2[0-4]\d|[01]?\d?\d)(\.(25[0-5]|2[0-4]\d|[01]?\d?\d)){3}$/
   if (!ipReg.test(ip)) {
@@ -186,18 +230,29 @@ function handleAddIp() {
     ElMessage.warning('该 IP 已存在')
     return
   }
-  ipWhitelist.value.unshift({
-    ip,
-    remark: '手动添加',
-    createTime: new Date().toLocaleString().replace(/\//g, '-')
-  })
-  newIp.value = ''
-  ElMessage.success('IP 白名单添加成功')
+  
+  try {
+    await systemConfigApi.addIpWhitelist(ip, '手动添加')
+    ipWhitelist.value.unshift({
+      ip,
+      remark: '手动添加',
+      createTime: new Date().toLocaleString().replace(/\//g, '-')
+    })
+    newIp.value = ''
+    ElMessage.success('IP 白名单添加成功')
+  } catch (error: any) {
+    ElMessage.error(error.message || '添加IP失败')
+  }
 }
 
-function removeIp(index: number) {
-  ipWhitelist.value.splice(index, 1)
-  ElMessage.success('已删除白名单 IP')
+async function removeIp(ip: string) {
+  try {
+    await systemConfigApi.removeIpWhitelist(ip)
+    ipWhitelist.value = ipWhitelist.value.filter((item) => item.ip !== ip)
+    ElMessage.success('已删除白名单 IP')
+  } catch (error: any) {
+    ElMessage.error(error.message || '删除IP失败')
+  }
 }
 
 function resetConfig() {
@@ -223,10 +278,28 @@ function resetConfig() {
   ElMessage.success('已恢复默认配置')
 }
 
-function saveConfig() {
-  // TODO: 调用系统配置保存接口
-  ElMessage.success('系统配置保存成功')
+async function saveConfig() {
+  saving.value = true
+  try {
+    const configData: SystemConfigDTO = {
+      register: { ...registerForm },
+      security: { ...securityForm },
+      token: { ...tokenForm },
+      ipWhitelist: [...ipWhitelist.value]
+    }
+    await systemConfigApi.saveSystemConfig(configData)
+    ElMessage.success('系统配置保存成功')
+  } catch (error: any) {
+    ElMessage.error(error.message || '保存系统配置失败')
+  } finally {
+    saving.value = false
+  }
 }
+
+// 页面加载时获取配置
+onMounted(() => {
+  loadConfig()
+})
 </script>
 
 <style scoped>
