@@ -132,7 +132,7 @@
           <el-button size="small" type="warning" icon="el-icon-edit" @click="openEditDialog(scope.row)">
             编辑
           </el-button>
-          <el-dropdown @command="(cmd) => handleAction(cmd, scope.row)">
+          <el-dropdown @command="(cmd: string) => handleAction(cmd, scope.row)">
             <el-button size="small" type="text" icon="el-icon-more">更多</el-button>
             <template #dropdown>
               <el-dropdown-item command="renew" icon="el-icon-refresh">续费</el-dropdown-item>
@@ -645,7 +645,7 @@ const handleAutoRenewChange = async (row: SubscriptionDetailDTO) => {
 }
 
 // 删除订阅
-const handleDelete = async (row: SubscriptionDetailDTO) => {
+const handleDelete = async (_row: SubscriptionDetailDTO) => {
   try {
     await ElMessageBox.confirm(
       '确认删除该订阅吗？删除后将无法恢复',

@@ -228,3 +228,78 @@ export async function fetchSubscriptionAuditLogs(userId: string) {
   const response = await request.get(`/api/v1/users/${userId}/subscription/audit-logs`)
   return unwrapApiData<SubscriptionAuditLog[]>(response.data)
 }
+
+// ========== 权益配置相关类型 ==========
+
+export interface PlanBenefitsDTO {
+  planCode: string
+  planName: string
+  benefits: BenefitItem[]
+}
+
+export interface BenefitItem {
+  key: string
+  name: string
+  description?: string
+  type: 'switch' | 'input' | 'unlimited'
+  enabled: boolean
+  value?: number
+  min?: number
+  unlimited?: boolean
+  planCodes?: string[]
+}
+
+// ========== 权益配置 API ==========
+
+/**
+ * 获取会员计划权益配置
+ */
+export async function fetchPlanBenefits(code: string) {
+  const response = await request.get(`/api/v1/plans/${code}/benefits`)
+  return unwrapApiData<PlanBenefitsDTO>(response.data)
+}
+
+/**
+ * 更新会员计划权益配置
+ */
+export async function updatePlanBenefits(code: string, benefits: BenefitItem[]) {
+  const response = await request.put(`/api/v1/plans/${code}/benefits`, { benefits })
+  return unwrapApiData<null>(response.data)
+}
+
+// ========== 会员计划操作日志相关类型 ==========
+
+export interface PlanAuditLogItem {
+  id: string
+  planId: string
+  operateType: string
+  auditStatus: string
+  beforeData?: any
+  afterData?: any
+  applicantId?: string
+  applicantName?: string
+  applyRemark?: string
+  auditorId?: string
+  auditorName?: string
+  auditRemark?: string
+  appliedAt?: string
+  auditedAt?: string
+  createdAt: string
+}
+
+export interface PlanAuditLogsResponse {
+  planCode: string
+  planName: string
+  items: PlanAuditLogItem[]
+  total: number
+}
+
+// ========== 会员计划操作日志 API ==========
+
+/**
+ * 获取会员计划操作日志
+ */
+export async function fetchPlanAuditLogs(code: string) {
+  const response = await request.get(`/api/v1/plans/${code}/audit-logs`)
+  return unwrapApiData<PlanAuditLogsResponse>(response.data)
+}

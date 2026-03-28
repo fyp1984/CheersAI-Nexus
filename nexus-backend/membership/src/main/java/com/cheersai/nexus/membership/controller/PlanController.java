@@ -2,15 +2,18 @@ package com.cheersai.nexus.membership.controller;
 
 import com.cheersai.nexus.common.model.base.Result;
 import com.cheersai.nexus.membership.dto.PlanAuditDTO;
+import com.cheersai.nexus.membership.dto.PlanBenefitsDTO;
 import com.cheersai.nexus.membership.dto.PlanCreateDTO;
 import com.cheersai.nexus.membership.dto.PlanDetailDTO;
 import com.cheersai.nexus.membership.dto.PlanUpdateDTO;
+import com.cheersai.nexus.membership.entity.PlanAuditLog;
 import com.cheersai.nexus.membership.service.PlanService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 会员计划管理控制器
@@ -117,5 +120,45 @@ public class PlanController {
     @GetMapping("/{code}/pending-audit")
     public Result<Object> getPendingAudit(@PathVariable("code") String code) {
         return Result.success(planService.getPendingAudit(code));
+    }
+
+    /**
+     * 获取会员计划权益配置
+     */
+    @GetMapping("/{code}/benefits")
+    public Result<PlanBenefitsDTO> getPlanBenefits(@PathVariable("code") String code) {
+        PlanBenefitsDTO benefits = planService.getPlanBenefits(code);
+        if (benefits == null) {
+            return Result.error("会员计划不存在");
+        }
+        return Result.success(benefits);
+    }
+
+    /**
+     * 更新会员计划权益配置
+     */
+    @PutMapping("/{code}/benefits")
+    public Result<Void> updatePlanBenefits(@PathVariable("code") String code,
+                                          @RequestBody PlanBenefitsDTO dto,
+                                          @RequestHeader(value = "X-User-Id", required = false) String userId,
+                                          @RequestHeader(value = "X-User-Name", required = false) String userName) {
+        String operatorId = userId != null ? userId : "system";
+        String operatorName = userName != null ? userName : "系统";
+        
+        try {
+            planService.updatePlanBenefits(code, dto, operatorId, operatorName);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return Result.error(e.getMessage());
+        }
+        return Result.success();
+    }
+
+    /**
+     * 获取会员计划操作日志
+     */
+    @GetMapping("/{code}/audit-logs")
+    public Result<Map<String, Object>> getPlanAuditLogs(@PathVariable("code") String code) {
+        return Result.success(planService.getPlanAuditLogs(code));
     }
 }

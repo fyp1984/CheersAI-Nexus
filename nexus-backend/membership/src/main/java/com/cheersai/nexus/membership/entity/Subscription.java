@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("subscriptions")
+@Table("nexus.subscriptions")
 public class Subscription {
 
     /**

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.cheersai.nexus.product.entity.table.ProductTableDef.PRODUCT;
 import static com.cheersai.nexus.product.entity.table.ProductVersionTableDef.PRODUCT_VERSION;
 
 /**

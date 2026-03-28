@@ -1,13 +1,13 @@
-ALTER TABLE users
+ALTER TABLE nexus.users
     ADD COLUMN IF NOT EXISTS role VARCHAR(32) DEFAULT 'user';
 
-ALTER TABLE users
+ALTER TABLE nexus.users
     ADD COLUMN IF NOT EXISTS member_plan_code VARCHAR(32) DEFAULT 'free';
 
-ALTER TABLE users
+ALTER TABLE nexus.users
     ADD COLUMN IF NOT EXISTS member_expire_at TIMESTAMP;
 
-UPDATE users
+UPDATE nexus.users
 SET role = COALESCE(role, 'user'),
     member_plan_code = COALESCE(member_plan_code, 'free')
 WHERE role IS NULL

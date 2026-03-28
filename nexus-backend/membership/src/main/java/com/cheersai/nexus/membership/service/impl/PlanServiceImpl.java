@@ -2,6 +2,7 @@ package com.cheersai.nexus.membership.service.impl;
 
 import com.cheersai.nexus.common.utils.JacksonUtils;
 import com.cheersai.nexus.membership.dto.PlanAuditDTO;
+import com.cheersai.nexus.membership.dto.PlanBenefitsDTO;
 import com.cheersai.nexus.membership.dto.PlanCreateDTO;
 import com.cheersai.nexus.membership.dto.PlanDetailDTO;
 import com.cheersai.nexus.membership.dto.PlanUpdateDTO;
@@ -11,6 +12,8 @@ import com.cheersai.nexus.membership.mapper.MembershipPlanMapper;
 import com.cheersai.nexus.membership.mapper.PlanAuditLogMapper;
 import com.cheersai.nexus.membership.service.PlanService;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.update.UpdateChain;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -21,7 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.cheersai.nexus.membership.entity.table.MembershipPlanTableDef.MEMBERSHIP_PLAN;
@@ -270,6 +275,102 @@ public class PlanServiceImpl extends ServiceImpl<MembershipPlanMapper, Membershi
                 .and(PlanAuditLog::getAuditStatus).eq("pending")
                 .orderBy("created_at", false)
                 .limit(1));
+    }
+
+    @Override
+    public PlanBenefitsDTO getPlanBenefits(String code) {
+        MembershipPlan plan = this.getOne(QueryWrapper.create()
+                .from(MEMBERSHIP_PLAN)
+                .where(MEMBERSHIP_PLAN.CODE.eq(code)));
+
+        if (plan == null) {
+            return null;
+        }
+
+        List<PlanBenefitsDTO.BenefitItem> benefits = parseBenefits(plan.getFeatures());
+        
+        return PlanBenefitsDTO.builder()
+                .planCode(plan.getCode())
+                .planName(plan.getName())
+                .benefits(benefits)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public void updatePlanBenefits(String code, PlanBenefitsDTO dto, String operatorId, String operatorName) throws JsonProcessingException {
+        MembershipPlan existing = this.getOne(QueryWrapper.create()
+                .from(MEMBERSHIP_PLAN)
+                .where(MEMBERSHIP_PLAN.CODE.eq(code)));
+
+        if (existing == null) {
+            throw new RuntimeException("计划不存在");
+        }
+
+        // 序列化为 JSON 字符串
+        String featuresJson = jacksonUtils.toJson(dto.getBenefits());
+        
+        // 记录变更前的数据
+        String beforeData = jacksonUtils.toJson(existing);
+
+        // 更新 features 字段
+        UpdateChain.of(MembershipPlan.class)
+                .set(MEMBERSHIP_PLAN.FEATURES, featuresJson)
+                .set(MEMBERSHIP_PLAN.UPDATED_AT, LocalDateTime.now())
+                .where(MEMBERSHIP_PLAN.CODE.eq(code))
+                .update();
+
+        // 获取更新后的数据
+        MembershipPlan updated = this.getOne(QueryWrapper.create()
+                .from(MEMBERSHIP_PLAN)
+                .where(MEMBERSHIP_PLAN.CODE.eq(code)));
+
+        String afterData = jacksonUtils.toJson(updated);
+
+        // 创建权益配置变更的审批记录
+        createAuditLog(existing.getId(), "benefit", "approved", beforeData, afterData,
+                "权益配置更新",
+                operatorId, operatorName, "系统自动审批");
+    }
+
+    @Override
+    public Map<String, Object> getPlanAuditLogs(String code) {
+        MembershipPlan plan = this.getOne(QueryWrapper.create()
+                .from(MEMBERSHIP_PLAN)
+                .where(MEMBERSHIP_PLAN.CODE.eq(code)));
+
+        if (plan == null) {
+            return null;
+        }
+
+        List<PlanAuditLog> logs = planAuditLogMapper.selectListByQuery(QueryWrapper.create()
+                .from(PlanAuditLog.class)
+                .where(PlanAuditLog::getPlanId).eq(plan.getId())
+                .orderBy("created_at desc")
+                .limit(100));
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("planCode", code);
+        result.put("planName", plan.getName());
+        result.put("items", logs);
+        result.put("total", logs.size());
+        return result;
+    }
+
+    /**
+     * 解析 benefits JSON 字符串为 List
+     */
+    private List<PlanBenefitsDTO.BenefitItem> parseBenefits(String featuresJson) {
+        if (!StringUtils.hasText(featuresJson)) {
+            return java.util.Collections.emptyList();
+        }
+        try {
+            return new ObjectMapper().readValue(featuresJson,
+                    new TypeReference<>() {
+                    });
+        } catch (Exception e) {
+            return java.util.Collections.emptyList();
+        }
     }
 
     private PlanDetailDTO toPlanDetailDTO(MembershipPlan plan) {

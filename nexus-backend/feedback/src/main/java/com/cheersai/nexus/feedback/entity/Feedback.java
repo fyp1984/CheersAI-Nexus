@@ -17,7 +17,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("feedbacks")
+@Table("nexus.feedbacks")
 public class Feedback {
 
     @Id(keyType = KeyType.Generator, value = "uuid")

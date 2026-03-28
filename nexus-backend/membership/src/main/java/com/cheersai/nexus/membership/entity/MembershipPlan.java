@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("membership_plans")
+@Table("nexus.membership_plans")
 public class MembershipPlan {
 
     /**

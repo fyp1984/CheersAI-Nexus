@@ -14,11 +14,11 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("users")
+@Table("nexus.users")
 public class User {
 
     @Id
-    private String userId;
+    private String id;
 
     private String email;
 
@@ -34,12 +34,13 @@ public class User {
 
     private String status;
 
+    @Column(ignore = true)
     private String role;
 
-    @Column("member_plan_code")
+    @Column(value = "member_plan_code", ignore = true)
     private String memberPlanCode;
 
-    @Column("member_expire_at")
+    @Column(value = "member_expire_at", ignore = true)
     private LocalDateTime memberExpireAt;
 
     @Builder.Default

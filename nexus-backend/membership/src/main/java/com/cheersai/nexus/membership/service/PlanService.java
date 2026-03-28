@@ -1,6 +1,7 @@
 package com.cheersai.nexus.membership.service;
 
 import com.cheersai.nexus.membership.dto.PlanAuditDTO;
+import com.cheersai.nexus.membership.dto.PlanBenefitsDTO;
 import com.cheersai.nexus.membership.dto.PlanCreateDTO;
 import com.cheersai.nexus.membership.dto.PlanDetailDTO;
 import com.cheersai.nexus.membership.dto.PlanUpdateDTO;
@@ -9,6 +10,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mybatisflex.core.service.IService;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 会员计划业务逻辑接口
@@ -49,4 +51,19 @@ public interface PlanService extends IService<MembershipPlan>{
      * 获取待审批的变更记录
      */
     Object getPendingAudit(String code);
+
+    /**
+     * 获取会员计划权益配置
+     */
+    PlanBenefitsDTO getPlanBenefits(String code);
+
+    /**
+     * 更新会员计划权益配置
+     */
+    void updatePlanBenefits(String code, PlanBenefitsDTO dto, String operatorId, String operatorName) throws JsonProcessingException;
+
+    /**
+     * 获取会员计划操作日志
+     */
+    Map<String, Object> getPlanAuditLogs(String code);
 }
