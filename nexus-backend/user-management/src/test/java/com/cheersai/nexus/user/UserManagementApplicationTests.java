@@ -10,25 +10,9 @@ class UserManagementApplicationTests {
 
     @Test
     void contextLoads() {
-        String userCondition = "123";
-        QueryWrapper wrapper = QueryWrapper.create()
-                .select()
-                .from("user")
-                .where(User::getUserId).like(userCondition)
-                .or(User::getEmail).like(userCondition)
-                .or(User::getPhone).like(userCondition)
-                .or(User::getUsername).like(userCondition)
-                .or(User::getNickname).like(userCondition)
-                .or(User::getPasswordHash).like(userCondition)
-                .or(User::getStatus).like(userCondition)
-                .or(User::getEmailVerified).like(userCondition)
-                .or(User::getPhoneVerified).like(userCondition)
-                .or(User::getLastLoginAt).like(userCondition)
-                .or(User::getLastLoginIp).like(userCondition)
-                .or(User::getCreatedAt).like(userCondition)
-                .or(User::getUpdatedAt).like(userCondition);
-
-        System.out.println(wrapper.toSQL());
+        // 测试上下文能否正常加载
+        // 此测试验证 Spring Boot 应用上下文配置是否正确
+        // 实际的单元测试应在各业务模块中实现
     }
 
 }

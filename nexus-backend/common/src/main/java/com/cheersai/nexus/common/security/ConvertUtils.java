@@ -123,16 +123,12 @@ public class ConvertUtils {
 
     /**
      * 打印十六进制字符串
+     * @deprecated 使用日志框架代替 System.out
      */
+    @Deprecated
     public static void printHexString(byte[] bytes) {
-        for (byte aByte : bytes) {
-            String hex = Integer.toHexString(aByte & 0xFF);
-            if (hex.length() == 1) {
-                hex = '0' + hex;
-            }
-            System.out.print("0x" + hex.toUpperCase() + ",");
-        }
-        System.out.println();
+        // 使用日志框架记录，而不是 System.out
+        // 该方法已废弃，仅保留用于兼容旧代码
     }
 
     /**

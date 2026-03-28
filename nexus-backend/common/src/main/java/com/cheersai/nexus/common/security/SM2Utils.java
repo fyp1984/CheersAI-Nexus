@@ -265,8 +265,7 @@ public class SM2Utils {
      */
     public static String getPubKeyByPriKey(String priKeyHexString) throws Exception {
         if (priKeyHexString == null || priKeyHexString.length() != 64) {
-            System.err.println("priKey 必须是Hex 64位格式，例如：11d0a44d47449d48d614f753ded6b06af76033b9c3a2af2b8b2239374ccbce3a");
-            return "";
+            throw new IllegalArgumentException("priKey 必须是Hex 64位格式");
         }
         String pubKeyHexString = null;
         X9ECParameters sm2ECParameters = GMNamedCurves.getByName("sm2p256v1");

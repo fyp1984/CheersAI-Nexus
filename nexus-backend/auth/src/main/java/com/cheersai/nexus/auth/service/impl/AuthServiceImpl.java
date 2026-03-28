@@ -104,7 +104,7 @@ public class AuthServiceImpl implements AuthService {
         userMapper.insert(user);
 
         // 记录审计日志
-        // saveAuditLog(user.getId(), "register", ipAddress, userAgent, true, null);
+        saveAuditLog(user.getId(), "register", ipAddress, userAgent, true, null);
 
         // 生成 Token
         return generateTokens(user, ipAddress, userAgent);
@@ -129,19 +129,19 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (user == null) {
-            // saveAuditLog(null, "login", ipAddress, userAgent, false, "用户不存在");
+            // 登录失败不记录审计日志（防止日志泛滥）
             throw new AuthBusinessException(AuthErrorCode.LOGIN_FAILED);
         }
 
         // 验证密码
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            // saveAuditLog(user.getId(), "login", ipAddress, userAgent, false, "密码错误");
+            // 密码错误不记录审计日志（防止日志泛滥）
             throw new AuthBusinessException(AuthErrorCode.LOGIN_FAILED);
         }
 
         // 检查用户状态
         if (!"active".equals(user.getStatus())) {
-            // saveAuditLog(user.getId(), "login", ipAddress, userAgent, false, "用户状态异常");
+            // 账户禁用不记录审计日志（防止日志泛滥）
             throw new AuthBusinessException(AuthErrorCode.ACCOUNT_DISABLED);
         }
 
@@ -151,7 +151,7 @@ public class AuthServiceImpl implements AuthService {
         userMapper.update(user);
 
         // 记录审计日志
-        // saveAuditLog(user.getId(), "login", ipAddress, userAgent, true, null);
+        saveAuditLog(user.getId(), "login", ipAddress, userAgent, true, null);
 
         // 生成 Token
         return generateTokens(user, ipAddress, userAgent);
@@ -299,10 +299,14 @@ public class AuthServiceImpl implements AuthService {
                 .action(action)
                 .ipAddress(ipAddress)
                 .userAgent(userAgent)
-                .result("success")
+                .result(success ? "success" : "failure")
                 .afterData(details)
                 .build();
-        auditLogMapper.insert(auditLog);
+        try {
+            auditLogMapper.insert(auditLog);
+        } catch (Exception e) {
+            log.error("保存审计日志失败: userId={}, action={}, error={}", userId, action, e.getMessage());
+        }
     }
 
     private String clean(String value) {

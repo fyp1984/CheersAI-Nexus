@@ -49,7 +49,7 @@ public class AuthGlobalExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public Result<Void> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
-        ex.printStackTrace();
+        log.warn("请求体格式错误: {}", ex.getMessage());
         return Result.error(AuthErrorCode.INVALID_PARAMETER.getCode(), "请求体格式错误");
     }
 

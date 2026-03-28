@@ -59,10 +59,9 @@ install_packages() {
     
     if command -v yum &> /dev/null; then
         # TencentOS / CentOS / RHEL
-        # yum install -y epel-release
         
         # Java 21
-        # yum install -y java-21-openjdk java-21-openjdk-devel
+        yum install -y java-21-openjdk java-21-openjdk-devel
         
         # Maven
         yum install -y maven
@@ -77,8 +76,14 @@ install_packages() {
         # Certbot
         yum install -y certbot python3-certbot-nginx
         
+        # PostgreSQL 16 (使用自带源)
+        yum install -y postgresql16 postgresql16-server postgresql16-contrib
+        
+        # Redis 7 (使用自带源)
+        yum install -y redis
+        
         # 其他工具
-        yum install -y git wget curl unzip htop iftop iotop
+        yum install -y git wget curl unzip htop iftop iotop lsof net-tools
         
     elif command -v apt &> /dev/null; then
         # Debian / Ubuntu
@@ -94,8 +99,14 @@ install_packages() {
         # Nginx
         apt install -y nginx certbot python3-certbot-nginx
         
+        # PostgreSQL 16
+        apt install -y postgresql-16 postgresql-client-16
+        
+        # Redis
+        apt install -y redis-server
+        
         # 其他工具
-        apt install -y git wget curl unzip htop iftop iotop
+        apt install -y git wget curl unzip htop iftop iotop lsof net-tools
     fi
     
     log_success "软件包安装完成"
@@ -118,6 +129,153 @@ create_user() {
     chmod 440 /etc/sudoers.d/${SERVER_USER}
 }
 
+# 配置 PostgreSQL 16
+configure_postgresql() {
+    log_info "========== 配置 PostgreSQL 16 =========="
+    
+    local PG_PASSWORD="cheersai"
+    local PGSQL_DATA_DIR="/var/lib/pgsql/16/data"
+    
+    if command -v yum &> /dev/null; then
+        # 初始化 PostgreSQL
+        if [ ! -d "${PGSQL_DATA_DIR}" ]; then
+            /usr/pgsql-16/bin/postgresql-16-setup initdb
+        fi
+        
+        # 配置 PostgreSQL 允许 SSH 隧道连接
+        cat > /var/lib/pgsql/16/data/pg_hba.conf << 'EOF'
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+# 本地连接
+local   all             all                                     trust
+# IPv4 本地回环
+host    all             all             127.0.0.1/32            trust
+# IPv6 本地回环
+host    all             all             ::1/128                 trust
+# 允许来自本地网络的连接（通过 SSH 隧道）
+host    all             all             172.16.0.0/16           md5
+host    all             all             10.0.0.0/8              md5
+host    all             all             192.168.0.0/16           md5
+# IPv4 本地网络
+host    all             all             0.0.0.0/0               md5
+EOF
+        
+        # 配置 PostgreSQL 监听地址
+        sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /var/lib/pgsql/16/data/postgresql.conf
+        sed -i "s/listen_addresses = 'localhost'/listen_addresses = '*'/" /var/lib/pgsql/16/data/postgresql.conf
+        
+        # 设置 max_connections
+        sed -i "s/#max_connections = 100/max_connections = 200/" /var/lib/pgsql/16/data/postgresql.conf
+        
+        # 启动 PostgreSQL
+        systemctl enable postgresql-16
+        systemctl start postgresql-16
+        
+        # 设置 postgres 用户密码
+        su - postgres -c "psql -c \"ALTER USER postgres WITH PASSWORD '${PG_PASSWORD}';\""
+        
+        # 创建 cheersai 数据库
+        su - postgres -c "psql -c \"DROP DATABASE IF EXISTS cheersai;\""
+        su - postgres -c "psql -c \"CREATE DATABASE cheersai;\""
+        su - postgres -c "psql -c \"ALTER DATABASE cheersai OWNER TO postgres;\""
+        
+        # 创建 cheersai_user（数据库应用用户）
+        su - postgres -c "psql -c \"DROP USER IF EXISTS cheersai_user;\""
+        su - postgres -c "psql -c \"CREATE USER cheersai_user WITH PASSWORD '${PG_PASSWORD}';\""
+        su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE cheersai TO cheersai_user;\""
+        su - postgres -c "psql -c \"ALTER USER cheersai_user CREATEDB;\""
+        
+        log_success "PostgreSQL 16 配置完成"
+        log_info "  - 数据库: cheersai"
+        log_info "  - 应用用户: cheersai_user / ${PG_PASSWORD}"
+        log_info "  - 超级用户: postgres / ${PG_PASSWORD}"
+        log_info "  - 端口: 5432"
+        log_info "  - SSH 隧道连接: 支持 (md5 认证)"
+        
+    elif command -v apt &> /dev/null; then
+        # Debian/Ubuntu PostgreSQL 配置
+        local PG_CONF="/etc/postgresql/16/main/postgresql.conf"
+        local PG_HBA="/etc/postgresql/16/main/pg_hba.conf"
+        
+        # 配置监听地址
+        sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" ${PG_CONF}
+        sed -i "s/listen_addresses = 'localhost'/listen_addresses = '*'/" ${PG_CONF}
+        
+        # 配置 SSH 隧道连接
+        cat > ${PG_HBA} << 'EOF'
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+local   all             all                                     trust
+host    all             all             127.0.0.1/32            trust
+host    all             all             ::1/128                 trust
+host    all             all             0.0.0.0/0               md5
+EOF
+        
+        # 重启 PostgreSQL
+        systemctl enable postgresql@16-main
+        systemctl restart postgresql@16-main
+        
+        # 设置密码
+        su - postgres -c "psql -c \"ALTER USER postgres WITH PASSWORD '${PG_PASSWORD}';\""
+        su - postgres -c "psql -c \"DROP DATABASE IF EXISTS cheersai;\""
+        su - postgres -c "psql -c \"CREATE DATABASE cheersai;\""
+        su - postgres -c "psql -c \"CREATE USER cheersai_user WITH PASSWORD '${PG_PASSWORD}';\""
+        su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE cheersai TO cheersai_user;\""
+        
+        log_success "PostgreSQL 16 配置完成"
+    fi
+}
+
+# 配置 Redis 7
+configure_redis() {
+    log_info "========== 配置 Redis 7 =========="
+    
+    local REDIS_PASSWORD="cheersai"
+    
+    if command -v yum &> /dev/null; then
+        # 配置 Redis 允许 SSH 隧道连接
+        sed -i "s/# bind 127.0.0.1/bind 0.0.0.0/" /etc/redis.conf
+        sed -i "s/bind 127.0.0.1/bind 0.0.0.0/" /etc/redis.conf
+        
+        # 设置 Redis 密码
+        sed -i "s/# requirepass foobared/requirepass ${REDIS_PASSWORD}/" /etc/redis.conf
+        sed -i "s/requirepass foobared/requirepass ${REDIS_PASSWORD}/" /etc/redis.conf
+        
+        # 关闭保护模式（允许远程连接通过密码认证）
+        sed -i "s/protected-mode yes/protected-mode no/" /etc/redis.conf
+        
+        # 设置持久化
+        sed -i "s/# appendonly no/appendonly yes/" /etc/redis.conf
+        
+        # 启动 Redis
+        systemctl enable redis
+        systemctl restart redis
+        
+        # 验证 Redis 连接
+        if redis-cli -a "${REDIS_PASSWORD}" ping | grep -q PONG; then
+            log_success "Redis 7 配置完成"
+            log_info "  - 密码: ${REDIS_PASSWORD}"
+            log_info "  - 端口: 6379"
+            log_info "  - SSH 隧道连接: 支持"
+        else
+            log_warn "Redis 连接验证失败，请检查配置"
+        fi
+        
+    elif command -v apt &> /dev/null; then
+        local REDIS_CONF="/etc/redis/redis.conf"
+        
+        sed -i "s/# bind 127.0.0.1/bind 0.0.0.0/" ${REDIS_CONF}
+        sed -i "s/bind 127.0.0.1/bind 0.0.0.0/" ${REDIS_CONF}
+        sed -i "s/# requirepass foobared/requirepass ${REDIS_PASSWORD}/" ${REDIS_CONF}
+        sed -i "s/protected-mode yes/protected-mode no/" ${REDIS_CONF}
+        
+        systemctl enable redis-server
+        systemctl restart redis-server
+        
+        log_success "Redis 7 配置完成"
+    fi
+    
+    log_info "  - SSH 隧道连接方法: ssh -L 6379:localhost:6379 user@175.178.236.183"
+}
+
 # 创建目录结构
 create_dirs() {
     log_info "========== 创建目录结构 =========="
@@ -131,6 +289,8 @@ create_dirs() {
         "${APP_DIR}/config/user-management"
         "${APP_DIR}/config/feedback"
         "${APP_DIR}/config/product"
+        "${APP_DIR}/config/membership"
+        "${APP_DIR}/config/auditlog"
         "${BACKUP_DIR}"
         "${LOG_DIR}"
         "${DEPLOY_SCRIPTS_DIR}"
@@ -154,13 +314,17 @@ setup_firewall() {
     if systemctl is-active --quiet firewalld; then
         firewall-cmd --permanent --add-service=http
         firewall-cmd --permanent --add-service=https
-        firewall-cmd --permanent --add-port=8082-8085/tcp
+        firewall-cmd --permanent --add-port=8082-8087/tcp
+        firewall-cmd --permanent --add-port=5432/tcp    # PostgreSQL
+        firewall-cmd --permanent --add-port=6379/tcp     # Redis
         firewall-cmd --reload
         log_success "firewalld 已配置"
     elif systemctl is-active --quiet ufw; then
         ufw allow http
         ufw allow https
-        ufw allow 8082:8085/tcp
+        ufw allow 8082:8087/tcp
+        ufw allow 5432/tcp
+        ufw allow 6379/tcp
         ufw reload
         log_success "ufw 已配置"
     else
@@ -327,6 +491,8 @@ main() {
     
     if [ "${mode}" = "full" ]; then
         install_packages
+        configure_postgresql
+        configure_redis
     fi
     
     create_user

@@ -16,7 +16,7 @@ public class SM4Utils {
      */
     public static String EncryptStr(String str, String key) throws Exception {
         if (str == null || key == null) {
-            return "0";
+            throw new IllegalArgumentException("密文或密钥不能为空");
         }
 
         int length = str.length();
@@ -24,9 +24,8 @@ public class SM4Utils {
 
         byte[] context = new SM4Context().EncryptByte(str.getBytes(), key.getBytes());
         if (context == null) {
-            return "1";
+            throw new RuntimeException("SM4加密失败");
         }
-        System.out.println(getHexString(context));
         return getHexString(context);
     }
 
@@ -37,39 +36,27 @@ public class SM4Utils {
      * @param keyStr        随机码
      */
     public static String DecryptStr(String cipherStrings, String keyStr) {
-        String result = "";
-        SM4Context aa = new SM4Context();
-        byte[] dd;
+        SM4Context sm4Context = new SM4Context();
 
         byte[] cipherText = Hex.decode(cipherStrings);
         byte[] keyBytes = keyStr.getBytes();
 
         try {
+            byte[] decrypted = sm4Context.DecryptStrByte(cipherText, keyBytes);
 
-            System.out.println();
-            System.out.println("It's a new version.");
-            System.out.println();
-
-            dd = aa.DecryptStrByte(cipherText, keyBytes);
-
-            result = new String(dd, StandardCharsets.UTF_8);
-            System.out.println("result=" + result);
+            String result = new String(decrypted, StandardCharsets.UTF_8);
             char[] charArray = result.toCharArray();
 
-            System.out.print("charArray:");
-            System.out.println(charArray);
-            System.out.println("Length:" + charArray.length);
-
+            // 去除末尾的 null 字符 padding
             if (charArray.length > 0) {
                 for (int i = charArray.length - 1; i > -1 && charArray[i] <= 16; i--) {
                     charArray[i] = ' ';
-                    System.out.println(charArray);
                 }
             }
 
             return String.valueOf(charArray).trim();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("SM4解密失败: " + e.getMessage(), e);
         }
     }
 }

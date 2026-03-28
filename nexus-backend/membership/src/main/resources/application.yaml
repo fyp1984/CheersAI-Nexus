@@ -4,17 +4,16 @@ server:
 spring:
   application:
     name: membership
-  
   datasource:
-    url: jdbc:postgresql://localhost:5432/cheersai
-    username: postgres
-    password: 021003st
     driver-class-name: org.postgresql.Driver
-
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/cheersai}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:021003st}
   flyway:
     enabled: false
 
 mybatis-flex:
-  db-type: postgresql
+  mapper-locations:
+    - classpath*:/mapper/*.xml
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

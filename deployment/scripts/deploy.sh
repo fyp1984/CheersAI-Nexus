@@ -232,6 +232,8 @@ restart_services() {
         log_info "  - nexus-user-management"
         log_info "  - nexus-feedback"
         log_info "  - nexus-product"
+        log_info "  - nexus-membership"
+        log_info "  - nexus-auditlog"
         log_info "  - nginx"
         return
     fi
@@ -240,6 +242,8 @@ restart_services() {
         set -e
         
         echo '停止旧服务...'
+        systemctl stop nexus-auditlog 2>/dev/null || true
+        systemctl stop nexus-membership 2>/dev/null || true
         systemctl stop nexus-product 2>/dev/null || true
         systemctl stop nexus-feedback 2>/dev/null || true
         systemctl stop nexus-user-management 2>/dev/null || true
@@ -257,12 +261,16 @@ restart_services() {
         sleep 2
         systemctl start nexus-product
         sleep 2
+        systemctl start nexus-membership
+        sleep 2
+        systemctl start nexus-auditlog
+        sleep 2
         
         echo '重启 Nginx...'
         nginx -t && nginx -s reload || nginx
         
         echo '检查服务状态...'
-        for svc in nexus-auth nexus-user-management nexus-feedback nexus-product; do
+        for svc in nexus-auth nexus-user-management nexus-feedback nexus-product nexus-membership nexus-auditlog; do
             if systemctl is-active --quiet \$svc; then
                 echo \"✓ \$svc is running\"
             else
@@ -306,8 +314,8 @@ verify_deployment() {
     
     # 检查 API 端点
     log_info "检查 API 端点..."
-    for endpoint in "/api/v1/auth/me" "/api/v1/users" "/api/v1/products" "/api/v1/feedbacks"; do
-        if curl -sf -o /dev/null -w "%{http_code}" "https://${domain}${endpoint}" | grep -q "401\|200"; then
+    for endpoint in "/api/v1/auth/me" "/api/v1/users" "/api/v1/products" "/api/v1/feedbacks" "/api/v1/membership/plans" "/api/v1/audit-logs"; do
+        if curl -sf -o /dev/null -w "%{http_code}" "https://${domain}${endpoint}" | grep -q "401\|200\|404"; then
             log_success "✓ ${endpoint} 可访问"
         else
             log_warn "✗ ${endpoint} 无法访问"

@@ -10,6 +10,7 @@ import com.cheersai.nexus.membership.entity.PlanAuditLog;
 import com.cheersai.nexus.membership.service.PlanService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,6 +19,7 @@ import java.util.Map;
 /**
  * 会员计划管理控制器
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/plans")
 @RequiredArgsConstructor
@@ -59,8 +61,8 @@ public class PlanController {
         try {
             planService.createPlan(dto, applicantId, applicantName);
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return Result.error(e.getMessage());
+            log.error("创建会员计划失败: {}", e.getMessage());
+            return Result.error("创建会员计划失败: " + e.getMessage());
         }
         return Result.success();
     }
@@ -79,8 +81,8 @@ public class PlanController {
         try {
             planService.updatePlan(code, dto, applicantId, applicantName);
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return Result.error(e.getMessage());
+            log.error("更新会员计划失败: {}", e.getMessage());
+            return Result.error("更新会员计划失败: " + e.getMessage());
         }
         return Result.success();
     }
@@ -148,8 +150,8 @@ public class PlanController {
         try {
             planService.updatePlanBenefits(code, dto, operatorId, operatorName);
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
-            return Result.error(e.getMessage());
+            log.error("更新会员计划权益失败: {}", e.getMessage());
+            return Result.error("更新会员计划权益失败: " + e.getMessage());
         }
         return Result.success();
     }
