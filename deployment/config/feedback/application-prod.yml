@@ -1,0 +1,70 @@
+#==============================================================================
+# CheersAI-Nexus Feedback Service 配置 (生产环境)
+# 端口: 8084
+#==============================================================================
+
+server:
+  port: 8084
+  servlet:
+    context-path: /
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
+
+spring:
+  application:
+    name: nexus-feedback
+  
+  # PostgreSQL 数据库配置
+  datasource:
+    url: jdbc:postgresql://localhost:5432/cheersai
+    username: cheersai_user
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+  
+  # Flyway 数据库迁移
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+  
+  # Jackson 配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    serialization:
+      write-dates-as-timestamps: false
+
+# MyBatis-Flex 配置
+mybatis-flex:
+  mapper:
+    base-package: com.cheersai.nexus.feedback.mapper
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+
+# JWT 配置
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiration: 3600000
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.cheersai.nexus: DEBUG
+    org.springframework.web: INFO
+  file:
+    name: /home/nexus/logs/feedback.log
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30

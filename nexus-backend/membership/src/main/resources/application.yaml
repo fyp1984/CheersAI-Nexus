@@ -1,0 +1,22 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: membership
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/cheersai
+    username: postgres
+    password: 021003st
+    driver-class-name: org.postgresql.Driver
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+mybatis-flex:
+  db-type: postgresql
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

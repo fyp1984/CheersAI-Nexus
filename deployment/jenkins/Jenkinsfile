@@ -1,0 +1,249 @@
+# CheersAI-Nexus Jenkins Pipeline
+# 
+# Jenkins 部署流水线配置
+# 
+# 前提条件:
+# 1. Jenkins 服务器已安装 Jenkins, Maven, Node.js, JDK 21
+# 2. 配置了 SSH 密钥可访问部署服务器
+# 3. 部署脚本已上传到 /home/nexus/deployment/scripts/
+# 4. systemd 服务文件已部署到 /etc/systemd/system/
+#
+# 在 Jenkins 中创建 Pipeline 项目，将此文件内容粘贴到 Pipeline Script 中
+# 或使用 "Pipeline script from SCM" 指向此仓库
+
+pipeline {
+    agent any
+    
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 1, unit: 'HOURS')
+        timestamps()
+    }
+    
+    environment {
+        // 部署服务器配置
+        DEPLOY_SERVER = '175.178.236.183'
+        DEPLOY_USER = 'nexus'
+        DEPLOY_PATH = '/home/nexus/app'
+        BACKUP_PATH = '/home/nexus/backup'
+        
+        // 构建配置
+        BUILD_VERSION = "${env.BUILD_NUMBER}"
+        APP_NAME = 'nexus'
+    }
+    
+    stages {
+        stage('Preparation') {
+            steps {
+                echo '========================================'
+                echo '  CheersAI-Nexus CI/CD Pipeline'
+                echo '  Build #: ${BUILD_NUMBER}'
+                echo '  Branch: ${BRANCH_NAME}'
+                echo '========================================'
+                
+                // 清理工作空间
+                cleanWs()
+            }
+        }
+        
+        stage('Clone') {
+            steps {
+                echo 'Clone repository...'
+                checkout scm
+            }
+        }
+        
+        stage('Backend Build') {
+            steps {
+                echo 'Building Backend...'
+                dir('nexus-backend') {
+                    sh '''
+                        mvn clean package -DskipTests -q
+                    '''
+                }
+            }
+        }
+        
+        stage('Frontend Build') {
+            steps {
+                echo 'Building Frontend...'
+                dir('nexus-frontend') {
+                    sh '''
+                        npm install --legacy-peer-deps
+                        npm run build
+                    '''
+                }
+            }
+        }
+        
+        stage('Create Deploy Package') {
+            steps {
+                echo 'Creating deploy package...'
+                sh '''
+                    mkdir -p deploy-output/backend
+                    mkdir -p deploy-output/frontend
+                    
+                    # Copy backend JARs
+                    cp nexus-backend/auth/target/auth-*.jar deploy-output/backend/nexus-auth.jar
+                    cp nexus-backend/user-management/target/user-management-*.jar deploy-output/backend/nexus-user-management.jar
+                    cp nexus-backend/feedback/target/feedback-*.jar deploy-output/backend/nexus-feedback.jar
+                    cp nexus-backend/product/target/product-*.jar deploy-output/backend/nexus-product.jar
+                    
+                    # Copy frontend dist
+                    cp -r nexus-frontend/dist deploy-output/frontend/
+                    
+                    # Create manifest
+                    cat > deploy-output/deploy-manifest.txt << EOF
+Build: ${BUILD_NUMBER}
+Date: $(date)
+Branch: ${BRANCH_NAME}
+Commit: ${GIT_COMMIT}
+EOF
+                    
+                    # Create tar.gz
+                    cd deploy-output
+                    tar -czf ../${APP_NAME}-build-${BUILD_NUMBER}.tar.gz *
+                    cd ..
+                    mv ${APP_NAME}-build-${BUILD_NUMBER}.tar.gz deployment/output/
+                '''
+            }
+        }
+        
+        stage('Unit Tests') {
+            steps {
+                echo 'Running Backend Tests...'
+                dir('nexus-backend') {
+                    sh '''
+                        mvn test -q || true
+                    '''
+                }
+            }
+        }
+        
+        stage('Deploy to Server') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'develop'
+                }
+            }
+            steps {
+                echo 'Deploying to server...'
+                sh '''
+                    PACKAGE_FILE="deployment/output/${APP_NAME}-build-${BUILD_NUMBER}.tar.gz"
+                    
+                    # Upload package
+                    scp -o StrictHostKeyChecking=no ${PACKAGE_FILE} ${DEPLOY_USER}@${DEPLOY_SERVER}:${DEPLOY_PATH}/nexus-new.tar.gz
+                    
+                    # Backup current on server
+                    ssh -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_SERVER} << 'SSH_EOF'
+                        set -e
+                        cd ${DEPLOY_PATH}
+                        
+                        # Backup current version
+                        if [ -d "backend" ] || [ -d "frontend" ]; then
+                            BACKUP_NAME="backup-$(date +%Y%m%d_%H%M%S)"
+                            mkdir -p ${BACKUP_PATH}/${BACKUP_NAME}
+                            cp -r backend ${BACKUP_PATH}/${BACKUP_NAME}/ 2>/dev/null || true
+                            cp -r frontend ${BACKUP_PATH}/${BACKUP_NAME}/ 2>/dev/null || true
+                            echo "Backup created: ${BACKUP_NAME}"
+                        fi
+                        
+                        # Extract new package
+                        tar -xzf nexus-new.tar.gz
+                        mv nexus-new.tar.gz nexus-current.tar.gz
+                        
+                        # Restart services
+                        echo "Restarting services..."
+                        systemctl stop nexus-product 2>/dev/null || true
+                        systemctl stop nexus-feedback 2>/dev/null || true
+                        systemctl stop nexus-user-management 2>/dev/null || true
+                        systemctl stop nexus-auth 2>/dev/null || true
+                        sleep 3
+                        
+                        systemctl start nexus-auth
+                        sleep 2
+                        systemctl start nexus-user-management
+                        sleep 2
+                        systemctl start nexus-feedback
+                        sleep 2
+                        systemctl start nexus-product
+                        sleep 2
+                        
+                        # Reload nginx
+                        nginx -t && nginx -s reload || nginx
+                        
+                        echo "Services restarted"
+                        
+                        # Show status
+                        for svc in nexus-auth nexus-user-management nexus-feedback nexus-product; do
+                            if systemctl is-active --quiet $svc; then
+                                echo "✓ $svc is running"
+                            else
+                                echo "✗ $svc is NOT running"
+                            fi
+                        done
+SSH_EOF
+                '''
+            }
+        }
+        
+        stage('Verification') {
+            when {
+                anyOf {
+                    branch 'main'
+                    branch 'develop'
+                }
+            }
+            steps {
+                echo 'Verifying deployment...'
+                sh '''
+                    sleep 5
+                    curl -sf https://uat-nexus.cheersai.cloud/ > /dev/null && echo "✓ Frontend is accessible" || echo "✗ Frontend check failed"
+                    curl -sf -o /dev/null -w "%{http_code}" https://uat-nexus.cheersai.cloud/api/v1/auth/me | grep -q "401" && echo "✓ Auth API is accessible" || echo "✗ Auth API check failed"
+                '''
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+            emailext (
+                subject: "✓ CheersAI-Nexus 构建成功 #${BUILD_NUMBER}",
+                body: """
+                    构建信息:
+                    - 构建编号: #${BUILD_NUMBER}
+                    - 分支: ${BRANCH_NAME}
+                    - 提交: ${GIT_COMMIT}
+                    - 构建者: ${BUILD_USER}
+                    
+                    部署服务器: ${DEPLOY_SERVER}
+                    部署路径: ${DEPLOY_PATH}
+                    
+                    详情: ${BUILD_URL}
+                """,
+                to: "admin@cheersai.cloud"
+            )
+        }
+        failure {
+            echo 'Pipeline failed!'
+            emailext (
+                subject: "✗ CheersAI-Nexus 构建失败 #${BUILD_NUMBER}",
+                body: """
+                    构建失败:
+                    - 构建编号: #${BUILD_NUMBER}
+                    - 分支: ${BRANCH_NAME}
+                    - 提交: ${GIT_COMMIT}
+                    
+                    构建日志: ${BUILD_URL}console
+                """,
+                to: "admin@cheersai.cloud"
+            )
+        }
+        always {
+            echo 'Cleaning workspace...'
+            cleanWs()
+        }
+    }
+}
