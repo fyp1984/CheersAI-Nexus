@@ -8,24 +8,32 @@ defineProps<{
 </script>
 
 <template>
-  <el-card shadow="never" class="page-card">
-    <template #header>
-      <div class="card-header">
-        <h2>{{ title }}</h2>
-        <el-tag :type="priority === 'P0' ? 'danger' : priority === 'P1' ? 'warning' : 'info'">
-          {{ priority }}
-        </el-tag>
-      </div>
-    </template>
+  <div class="page-placeholder">
+    <el-card shadow="never" class="placeholder-card">
+      <template #header>
+        <div class="card-header">
+          <h2>{{ title }}</h2>
+          <el-tag :type="priority === 'P0' ? 'danger' : priority === 'P1' ? 'warning' : 'info'">
+            {{ priority }}
+          </el-tag>
+        </div>
+      </template>
 
-    <p class="path">{{ path }}</p>
-    <p class="desc">{{ description }}</p>
-  </el-card>
+      <p class="path">{{ path }}</p>
+      <p class="desc">{{ description }}</p>
+    </el-card>
+  </div>
 </template>
 
 <style scoped>
-.page-card {
+.page-placeholder {
   max-width: 960px;
+}
+
+.placeholder-card {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .card-header {
@@ -37,15 +45,20 @@ defineProps<{
 h2 {
   margin: 0;
   font-size: 20px;
+  font-weight: 600;
+  color: #111827;
 }
 
 .path {
-  margin: 8px 0;
-  color: #64748b;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  margin: 12px 0;
+  color: #6b7280;
+  font-family: monospace;
+  font-size: 13px;
 }
 
 .desc {
-  margin: 0 0 16px;
+  margin: 0;
+  color: #4b5563;
+  font-size: 14px;
 }
 </style>

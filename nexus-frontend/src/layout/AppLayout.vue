@@ -25,10 +25,8 @@ const menus = [
 ]
 
 async function handleLogout() {
-  // 先清理本地登录态并跳转，避免被后端异常阻塞退出体验
   authStore.clearToken()
   await router.replace('/login')
-
   try {
     await logout()
   } catch {
@@ -39,19 +37,41 @@ async function handleLogout() {
 
 <template>
   <el-container class="app-layout">
-    <el-aside width="220px" class="layout-aside">
-      <div class="logo">CheersAI Nexus</div>
-      <el-menu :default-active="activeMenu" router>
+    <el-aside width="256px" class="layout-aside">
+      <div class="logo-area">
+        <div class="logo-badge">C</div>
+        <div class="logo-text">
+          <span class="logo-name">CheersAI Nexus</span>
+          <span class="logo-slogan">安全可控的AI协作平台</span>
+        </div>
+      </div>
+      <el-menu :default-active="activeMenu" router class="sidebar-menu">
         <el-menu-item v-for="menu in menus" :key="menu.index" :index="menu.index">
           {{ menu.label }}
         </el-menu-item>
       </el-menu>
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar">管</div>
+          <div class="user-details">
+            <span class="user-email">admin@cheersai.com</span>
+            <span class="user-role">管理员</span>
+          </div>
+        </div>
+      </div>
     </el-aside>
 
     <el-container>
       <el-header class="layout-header">
-        <span class="header-title">运营管理平台</span>
-        <el-button type="primary" plain size="small" @click="handleLogout">退出</el-button>
+        <div class="header-left">
+          <span class="system-status">
+            <span class="status-dot"></span>
+            系统运行正常
+          </span>
+        </div>
+        <div class="header-right">
+          <el-button type="primary" plain size="small" @click="handleLogout">退出</el-button>
+        </div>
       </el-header>
       <el-main class="layout-main">
         <RouterView />
@@ -63,55 +83,163 @@ async function handleLogout() {
 <style scoped>
 .app-layout {
   min-height: 100vh;
-  position: relative;
-  --layout-header-height: 60px;
-}
-
-.app-layout::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 220px;
-  width: 1px;
-  background: #dcdfe6;
-  z-index: 3;
-  pointer-events: none;
 }
 
 .layout-aside {
-  background: #fff;
+  background: linear-gradient(180deg, #111827 0%, #1f2937 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  width: 256px !important;
 }
 
-.logo {
-  height: var(--layout-header-height);
+.logo-area {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.logo-badge {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: white;
   font-weight: 700;
-  color: var(--nexus-primary);
-  border-bottom: 1px solid #dcdfe6;
+  font-size: 18px;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.logo-name {
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.logo-slogan {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.sidebar-menu {
+  flex: 1;
+  background: transparent;
+  border-right: none;
+  padding: 12px 8px;
+}
+
+:deep(.el-menu-item) {
+  height: 48px;
+  line-height: 48px;
+  padding: 0 16px !important;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  color: #d1d5db;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+:deep(.el-menu-item:hover) {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+}
+
+:deep(.el-menu-item.is-active) {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-email {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.user-role {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 11px;
 }
 
 .layout-header {
-  height: var(--layout-header-height);
-  border-bottom: 1px solid #dcdfe6;
+  height: 64px;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
-  background: #fff;
+  padding: 0 32px;
 }
 
-:deep(.el-menu) {
-  border-right: none;
+.header-left {
+  display: flex;
+  align-items: center;
 }
 
-.header-title {
-  font-weight: 600;
+.system-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .layout-main {
-  background: #f6f8fb;
+  background: #f9fafb;
+  padding: 32px;
+  overflow-y: auto;
 }
 </style>

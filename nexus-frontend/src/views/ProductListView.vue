@@ -533,17 +533,17 @@ onMounted(() => { loadProducts() })
 </script>
 
 <style scoped>
-.page-container { padding: 20px; }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.title { font-size: 20px; font-weight: bold; }
-.toolbar { margin-bottom: 20px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
-.pagination-container { margin-top: 20px; display: flex; justify-content: flex-end; }
+.page-container { padding: 0; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.title { font-size: 20px; font-weight: 600; color: #111827; }
+.toolbar { margin-bottom: 20px; display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.pagination-container { margin-top: 24px; display: flex; justify-content: flex-end; }
 .download-item { display: flex; align-items: center; }
 .download-label { width: 80px; font-weight: 500; color: #4b5563; }
-.feature-tip { padding: 8px 12px; background-color: #f3f4f6; border-radius: 4px; font-size: 14px; }
+.feature-tip { padding: 12px 16px; background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 14px; }
 .version-header { display: flex; align-items: center; }
 .form-tip { font-size: 12px; color: #6b7280; margin-top: 4px; }
 .mt-10 { margin-top: 10px; }
-:deep(.avatar-uploader-icon) { font-size: 28px; color: #409eff; width: 128px; height: 128px; line-height: 128px; }
-:deep(.el-table th) { background-color: #f9fafb; font-weight: 500; }
+:deep(.avatar-uploader-icon) { font-size: 28px; color: #3b82f6; width: 128px; height: 128px; line-height: 128px; }
+:deep(.el-table th) { background-color: #f9fafb; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px; }
 </style>

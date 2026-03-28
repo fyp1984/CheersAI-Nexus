@@ -406,8 +406,7 @@ onMounted(() => {
 </script>
 <style scoped>
 .page-container {
-  padding: 24px;
-  margin: 16px;
+  padding: 0;
 }
 /* 头部样式 */
 .header {
@@ -416,7 +415,7 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid #e5e7eb;
 }
 .header-left {
   display: flex;
@@ -424,8 +423,8 @@ onMounted(() => {
 }
 .title {
   font-size: 24px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
+  color: #111827;
   margin-bottom: 4px;
 }
 .subtitle {
@@ -436,11 +435,12 @@ onMounted(() => {
 .stats-card {
   display: flex;
   gap: 24px;
-  padding: 16px;
+  padding: 20px;
   background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
 }
 .stat-item {
   display: flex;
@@ -455,12 +455,12 @@ onMounted(() => {
 }
 .stat-value {
   font-size: 24px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
+  color: #111827;
 }
-.stat-value.primary { color: #409eff; }
+.stat-value.primary { color: #3b82f6; }
 .stat-value.success { color: #10b981; }
-.stat-value.danger { color: #f56c6c; }
+.stat-value.danger { color: #ef4444; }
 /* 搜索区 */
 .search-section {
   margin-bottom: 16px;
@@ -471,7 +471,7 @@ onMounted(() => {
 .search-form {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
 }
 /* 工具栏 */
 .toolbar {
@@ -482,7 +482,7 @@ onMounted(() => {
 }
 .toolbar-left {
   display: flex;
-  gap: 8px;
+  gap: 12px;
 }
 .toolbar-right {
   display: flex;
@@ -494,7 +494,7 @@ onMounted(() => {
 }
 /* 分页 */
 .pagination-container {
-  margin-top: 20px;
+  margin-top: 24px;
   display: flex;
   justify-content: flex-end;
 }

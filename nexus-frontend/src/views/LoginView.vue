@@ -135,14 +135,15 @@ async function handleLogin() {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  background: linear-gradient(145deg, #edf5ff 0%, #f7f9fc 40%, #eef2f9 100%);
+  background: linear-gradient(180deg, #111827 0%, #1f2937 100%);
   padding: 20px;
 }
 
 .auth-card {
   width: min(460px, 100%);
-  border-radius: 14px;
-  border: 1px solid #e8edf5;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
 }
 
 .card-header {
@@ -152,30 +153,34 @@ async function handleLogin() {
 }
 
 .header-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
-  color: #1f2937;
+  color: #111827;
 }
 
 .header-subtitle {
   margin-top: 4px;
   color: #6b7280;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .submit-btn {
   width: 100%;
+  margin-top: 8px;
 }
 
 .dev-hint {
-  margin-top: 12px;
+  margin-top: 16px;
+  padding: 12px;
+  background: #f9fafb;
+  border-radius: 8px;
   color: #6b7280;
   font-size: 12px;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .bottom-actions {
-  margin-top: 12px;
+  margin-top: 16px;
   display: flex;
   justify-content: flex-end;
 }
