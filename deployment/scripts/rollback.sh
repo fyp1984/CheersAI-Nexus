@@ -88,6 +88,8 @@ do_rollback() {
     # 停止服务
     log_info "停止服务..."
     ssh ${SERVER_USER}@${SERVER_HOST} "
+        systemctl stop nexus-auditlog 2>/dev/null || true
+        systemctl stop nexus-membership 2>/dev/null || true
         systemctl stop nexus-product 2>/dev/null || true
         systemctl stop nexus-feedback 2>/dev/null || true
         systemctl stop nexus-user-management 2>/dev/null || true
@@ -127,6 +129,10 @@ do_rollback() {
         systemctl start nexus-feedback
         sleep 2
         systemctl start nexus-product
+        sleep 2
+        systemctl start nexus-membership
+        sleep 2
+        systemctl start nexus-auditlog
         sleep 2
         nginx -t && nginx -s reload || nginx
     "
