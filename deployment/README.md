@@ -18,7 +18,9 @@ deployment/
 │   ├── nexus-auth.service
 │   ├── nexus-user-management.service
 │   ├── nexus-feedback.service
-│   └── nexus-product.service
+│   ├── nexus-product.service
+│   ├── nexus-membership.service
+│   └── nexus-auditlog.service
 ├── nginx/                      # Nginx 配置
 │   ├── nexus.conf             # 主配置文件
 │   └── ssl-setup.sh           # SSL 证书安装脚本
@@ -30,6 +32,8 @@ deployment/
 │   ├── user-management/application-prod.yml
 │   ├── feedback/application-prod.yml
 │   ├── product/application-prod.yml
+│   ├── membership/application-prod.yml
+│   ├── auditlog/application-prod.yml
 │   └── .env.example           # 环境变量示例
 └── docs/                       # 文档
     └── OPERATIONS_MANUAL.md   # 完整运维手册
@@ -97,6 +101,8 @@ cd deployment/scripts
 | user-management | 8083 | /api/v1/users | 用户管理 |
 | feedback | 8084 | /api/v1/feedbacks | 反馈服务 |
 | product | 8085 | /api/v1/products | 产品服务 |
+| membership | 8086 | /api/v1/membership | 会员管理 |
+| auditlog | 8087 | /api/v1/audit-logs | 审计日志 |
 
 ## 环境要求
 
@@ -118,7 +124,12 @@ cd deployment/scripts
 
 - Linux (CentOS/RHEL/Ubuntu)
 - Java 21
-- PostgreSQL 14+
-- Redis 6+
+- PostgreSQL 16 (自带源安装)
+- Redis 7 (自带源安装)
 - Nginx 1.20+
 - SSL 证书 (已有)
+
+**数据库配置：**
+- PostgreSQL 密码: cheersai
+- Redis 密码: cheersai
+- 支持 SSH 隧道连接

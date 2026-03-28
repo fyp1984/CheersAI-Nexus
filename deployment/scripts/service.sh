@@ -18,7 +18,7 @@ set -e
 # 配置
 SERVER_USER="nexus"
 SERVER_HOST="175.178.236.183"
-SERVICES=("nexus-auth" "nexus-user-management" "nexus-feedback" "nexus-product")
+SERVICES=("nexus-auth" "nexus-user-management" "nexus-feedback" "nexus-product" "nexus-membership" "nexus-auditlog")
 
 # 颜色定义
 RED='\033[0;31m'
@@ -52,6 +52,8 @@ usage() {
   user-management    用户管理服务 (端口 8083)
   feedback           反馈服务 (端口 8084)
   product            产品服务 (端口 8085)
+  membership         会员服务 (端口 8086)
+  auditlog           审计日志服务 (端口 8087)
   all                所有服务（默认）
 
 示例:
