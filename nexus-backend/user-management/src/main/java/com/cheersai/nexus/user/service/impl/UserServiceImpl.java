@@ -8,8 +8,6 @@ import com.cheersai.nexus.user.dto.UserListResponseDTO;
 import com.cheersai.nexus.user.dto.UserRecordDTO;
 import com.cheersai.nexus.user.dto.UserStatusBatchUpdateDTO;
 import com.cheersai.nexus.user.dto.UserUpdateDTO;
-import com.cheersai.nexus.user.exception.UserBusinessException;
-import com.cheersai.nexus.user.exception.UserErrorCode;
 import com.cheersai.nexus.user.mapper.UserMapper;
 import com.cheersai.nexus.user.service.UserService;
 import com.mybatisflex.core.query.QueryWrapper;
@@ -80,7 +78,7 @@ public class UserServiceImpl implements UserService {
     public List<UserRecordDTO> searchUsers(String userCondition) {
         String keyword = normalize(userCondition);
         if (!StringUtils.hasText(keyword)) {
-            throw new UserBusinessException(UserErrorCode.INVALID_PARAMETER, "搜索关键字不能为空");
+            throw new RuntimeException("搜索关键字不能为空");
         }
         List<User> users = userMapper.selectListByQuery(
                 QueryWrapper.create()
@@ -100,7 +98,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserRecordDTO createUser(UserCreateDTO dto) {
         if (dto == null) {
-            throw new UserBusinessException(UserErrorCode.INVALID_PARAMETER, "请求体不能为空");
+            throw new RuntimeException("请求体不能为空");
         }
 
         String username = normalize(dto.getUsername());
@@ -113,13 +111,13 @@ public class UserServiceImpl implements UserService {
         String memberPlanCode = normalize(dto.getMemberPlanCode());
 
         if (!StringUtils.hasText(username)) {
-            throw new UserBusinessException(UserErrorCode.INVALID_PARAMETER, "用户名不能为空");
+            throw new RuntimeException("用户名不能为空");
         }
         if (!StringUtils.hasText(nickname)) {
-            throw new UserBusinessException(UserErrorCode.INVALID_PARAMETER, "昵称不能为空");
+            throw new RuntimeException("昵称不能为空");
         }
         if (!StringUtils.hasText(password)) {
-            throw new UserBusinessException(UserErrorCode.INVALID_PARAMETER, "密码不能为空");
+            throw new RuntimeException("密码不能为空");
         }
         ensureContactExists(email, phone);
 
@@ -157,7 +155,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserRecordDTO updateUser(String userId, UserUpdateDTO dto) {
         if (dto == null) {
-            throw new UserBusinessException(UserErrorCode.INVALID_PARAMETER, "请求体不能为空");
+            throw new RuntimeException("请求体不能为空");
         }
         User user = requireUser(userId);
 
@@ -224,7 +222,7 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void updateBatchStatus(UserStatusBatchUpdateDTO dto) {
         if (dto == null || dto.getIds() == null || dto.getIds().isEmpty()) {
-            throw new UserBusinessException(UserErrorCode.INVALID_PARAMETER, "用户ID列表不能为空");
+            throw new RuntimeException("用户ID列表不能为空");
         }
         String status = normalize(dto.getStatus());
         ensureValidStatus(status);
@@ -250,18 +248,18 @@ public class UserServiceImpl implements UserService {
     private User requireUser(String userId) {
         String safeUserId = normalize(userId);
         if (!StringUtils.hasText(safeUserId)) {
-            throw new UserBusinessException(UserErrorCode.INVALID_PARAMETER, "用户ID不能为空");
+            throw new RuntimeException("用户ID不能为空");
         }
         User user = userMapper.selectOneById(safeUserId);
         if (user == null) {
-            throw new UserBusinessException(UserErrorCode.USER_NOT_FOUND);
+            throw new RuntimeException("USER NOT FOUND");
         }
         return user;
     }
 
     private void ensureContactExists(String email, String phone) {
         if (!StringUtils.hasText(email) && !StringUtils.hasText(phone)) {
-            throw new UserBusinessException(UserErrorCode.INVALID_PARAMETER, "邮箱和手机号至少填写一个");
+            throw new RuntimeException("邮箱和手机号至少填写一个");
         }
     }
 
@@ -276,7 +274,7 @@ public class UserServiceImpl implements UserService {
                 && item.getUsername().equalsIgnoreCase(username)
                 && (excludeUserId == null || !excludeUserId.equals(item.getId())));
         if (exists) {
-            throw new UserBusinessException(UserErrorCode.USERNAME_EXISTS);
+            throw new RuntimeException("USERNAME EXISTS");
         }
     }
 
@@ -294,7 +292,7 @@ public class UserServiceImpl implements UserService {
                 && item.getEmail().equalsIgnoreCase(email)
                 && (excludeUserId == null || !excludeUserId.equals(item.getId())));
         if (exists) {
-            throw new UserBusinessException(UserErrorCode.EMAIL_EXISTS);
+            throw new RuntimeException("EMAIL ALREADY EXISTS");
         }
     }
 
@@ -312,25 +310,25 @@ public class UserServiceImpl implements UserService {
                 && item.getPhone().equals(phone)
                 && (excludeUserId == null || !excludeUserId.equals(item.getId())));
         if (exists) {
-            throw new UserBusinessException(UserErrorCode.PHONE_EXISTS);
+            throw new RuntimeException("PHONE_EXISTS");
         }
     }
 
     private void ensureValidStatus(String status) {
         if (!StringUtils.hasText(status) || !VALID_STATUS.contains(status)) {
-            throw new UserBusinessException(UserErrorCode.INVALID_STATUS);
+            throw new RuntimeException("INVALID_STATUS");
         }
     }
 
     private void ensureValidRole(String role) {
         if (!StringUtils.hasText(role) || !VALID_ROLE.contains(role)) {
-            throw new UserBusinessException(UserErrorCode.INVALID_ROLE);
+            throw new RuntimeException("INVALID_ROLE");
         }
     }
 
     private void ensureValidMemberPlan(String memberPlanCode) {
         if (!StringUtils.hasText(memberPlanCode) || !VALID_MEMBER_PLAN.contains(memberPlanCode)) {
-            throw new UserBusinessException(UserErrorCode.INVALID_PARAMETER, "会员方案编码不合法");
+            throw new RuntimeException("会员方案编码不合法");
         }
     }
 

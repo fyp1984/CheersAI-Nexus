@@ -1,0 +1,52 @@
+[Unit]
+Description=CheersAI Nexus Product Service
+Documentation=https://github.com/cheersai/nexus-backend
+After=network.target nexus-feedback.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nexus
+Group=nexus
+WorkingDirectory=/home/nexus/app/backend
+
+# JAR 文件
+Environment="JAVA_HOME=/usr/lib/jvm/java-21-openjdk"
+Environment="SPRING_PROFILES_ACTIVE=prod"
+Environment="SERVER_PORT=8085"
+Environment="APP_HOME=/home/nexus/app"
+
+# JVM 参数
+ExecStart=/usr/bin/java \
+    -Xms512m \
+    -Xmx1024m \
+    -XX:+UseG1GC \
+    -XX:MaxGCPauseMillis=200 \
+    -Djava.security.egd=file:/dev/./urandom \
+    -Dspring.config.location=/home/nexus/app/config/product/ \
+    -jar /home/nexus/app/backend/nexus-product.jar
+
+# 停止配置
+ExecStop=/bin/kill -SIGTERM $MAINPID
+SuccessExitStatus=143
+
+# 重启策略
+Restart=on-failure
+RestartSec=10
+StartLimitBurst=3
+StartLimitIntervalSec=60
+
+# 日志配置
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=nexus-product
+
+# 权限配置
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/home/nexus/app/logs /home/nexus/app/config
+
+[Install]
+WantedBy=multi-user.target

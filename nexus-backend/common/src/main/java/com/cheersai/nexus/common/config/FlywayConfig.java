@@ -1,4 +1,4 @@
-package com.cheersai.nexus.user.config;
+package com.cheersai.nexus.common.config;
 
 import org.springframework.boot.autoconfigure.flyway.FlywayMigrationStrategy;
 import org.springframework.context.annotation.Bean;

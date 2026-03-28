@@ -31,7 +31,7 @@ export default defineConfig({
         changeOrigin: true
       },
       '/api/v1/audit': {
-        target: 'http://localhost:8086',
+        target: 'http://localhost:8087',
         changeOrigin: true
       }
     }

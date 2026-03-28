@@ -45,7 +45,7 @@
         <mybatis-flex.version>1.11.6</mybatis-flex.version>
         <postgresql.version>42.7.3</postgresql.version>
         <hutool.version>5.8.28</hutool.version>
-        <flyway.version>10.17.0</flyway.version>
+        <flyway.version>11.7.2</flyway.version>
         <spring-cloud.version>2025.0.1</spring-cloud.version>
         <jackson-databind.version>2.21.1</jackson-databind.version>
     </properties>

@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
  * 系统配置业务逻辑实现类
  */
 @Service
-@RequiredArgsConstructor
 public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Autowired
@@ -32,7 +31,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     @Autowired
     private IpWhitelistMapper ipWhitelistMapper;
 
-    private final JacksonUtils jacksonUtils;
+    @Autowired
+    private JacksonUtils jacksonUtils;
 
     @Override
     public SystemConfigDTO getAllConfig() {

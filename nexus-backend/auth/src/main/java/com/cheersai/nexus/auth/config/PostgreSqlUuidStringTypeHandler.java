@@ -1,15 +1,12 @@
-package com.cheersai.nexus.product.config;
+package com.cheersai.nexus.auth.config;
 
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
 import org.apache.ibatis.type.MappedJdbcTypes;
-import org.apache.ibatis.type.MappedTypes;import org.springframework.context.annotation.Configuration;
+import org.apache.ibatis.type.MappedTypes;
+import org.springframework.context.annotation.Configuration;
 
-import java.sql.CallableStatement;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
+import java.sql.*;
 
 /**
  * PostgreSQL UUID 类型处理器（String <-> UUID）

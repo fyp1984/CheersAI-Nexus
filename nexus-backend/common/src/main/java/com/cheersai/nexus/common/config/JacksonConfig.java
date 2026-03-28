@@ -3,7 +3,6 @@ package com.cheersai.nexus.common.config;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,8 +38,8 @@ public class JacksonConfig {
         objectMapper.registerModule(new JavaTimeModule()); // 支持JDK8+时间类型
         // 5. 时区配置：统一使用东八区
         objectMapper.setTimeZone(TimeZone.getTimeZone("GMT+8"));
-        // 6. 开启类型安全校验（可选，提升序列化安全性）
-        objectMapper.activateDefaultTyping(LaissezFaireSubTypeValidator.instance, ObjectMapper.DefaultTyping.NON_FINAL);
+        // 注意：移除 activateDefaultTyping，因为这对普通 REST API 有害
+        // 如果需要多态类型，应该在特定 DTO 上使用 @JsonTypeInfo 注解
         return objectMapper;
     }
 }
