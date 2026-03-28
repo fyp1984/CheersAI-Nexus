@@ -9,28 +9,28 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface UserMapper extends BaseMapper<User> {
 
-    @Select("SELECT id AS userId, email, phone, username, nickname, avatar_url AS avatarUrl, "
+    @Select("SELECT id, email, phone, username, nickname, avatar_url AS avatarUrl, "
             + "password_hash AS passwordHash, status, email_verified AS emailVerified, "
             + "phone_verified AS phoneVerified, last_login_at AS lastLoginAt, last_login_ip AS lastLoginIp, "
             + "created_at AS createdAt, updated_at AS updatedAt "
             + "FROM nexus.users WHERE LOWER(email) = LOWER(#{email}) LIMIT 1")
     User selectOneByEmailIgnoreCase(@Param("email") String email);
 
-    @Select("SELECT id AS userId, email, phone, username, nickname, avatar_url AS avatarUrl, "
+    @Select("SELECT id, email, phone, username, nickname, avatar_url AS avatarUrl, "
             + "password_hash AS passwordHash, status, email_verified AS emailVerified, "
             + "phone_verified AS phoneVerified, last_login_at AS lastLoginAt, last_login_ip AS lastLoginIp, "
             + "created_at AS createdAt, updated_at AS updatedAt "
             + "FROM nexus.users WHERE phone = #{phone} LIMIT 1")
     User selectOneByPhone(@Param("phone") String phone);
 
-    @Select("SELECT id AS userId, email, phone, username, nickname, avatar_url AS avatarUrl, "
+    @Select("SELECT id, email, phone, username, nickname, avatar_url AS avatarUrl, "
             + "password_hash AS passwordHash, status, email_verified AS emailVerified, "
             + "phone_verified AS phoneVerified, last_login_at AS lastLoginAt, last_login_ip AS lastLoginIp, "
             + "created_at AS createdAt, updated_at AS updatedAt "
             + "FROM nexus.users WHERE LOWER(username) = LOWER(#{username}) LIMIT 1")
     User selectOneByUsernameIgnoreCase(@Param("username") String username);
 
-    @Select("SELECT id AS userId, email, phone, username, nickname, avatar_url AS avatarUrl, "
+    @Select("SELECT id, email, phone, username, nickname, avatar_url AS avatarUrl, "
             + "password_hash AS passwordHash, status, email_verified AS emailVerified, "
             + "phone_verified AS phoneVerified, last_login_at AS lastLoginAt, last_login_ip AS lastLoginIp, "
             + "created_at AS createdAt, updated_at AS updatedAt "

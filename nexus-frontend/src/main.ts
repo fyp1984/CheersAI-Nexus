@@ -6,6 +6,7 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import './styles/theme.css'
 import './styles/base.css'
+import './styles/components.css'
 
 const app = createApp(App)
 app.use(pinia)

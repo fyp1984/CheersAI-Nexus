@@ -278,14 +278,15 @@ async function handleRegister() {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  background: linear-gradient(145deg, #edf5ff 0%, #f7f9fc 40%, #eef2f9 100%);
+  background: linear-gradient(180deg, #111827 0%, #1f2937 100%);
   padding: 20px;
 }
 
 .register-card {
   width: min(620px, 100%);
-  border-radius: 14px;
-  border: 1px solid #e8edf5;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
 }
 
 .card-header {
@@ -295,29 +296,30 @@ async function handleRegister() {
 }
 
 .header-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
-  color: #1f2937;
+  color: #111827;
 }
 
 .header-subtitle {
   margin-top: 4px;
   color: #6b7280;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .inline-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .submit-btn {
   width: 100%;
+  margin-top: 8px;
 }
 
 .bottom-actions {
-  margin-top: 12px;
+  margin-top: 16px;
   text-align: right;
 }
 

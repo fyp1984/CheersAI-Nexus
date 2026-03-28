@@ -304,8 +304,7 @@ onMounted(() => {
 
 <style scoped>
 .page-container {
-  padding: 24px;
-  margin: 16px;
+  padding: 0;
 }
 
 .header {
@@ -314,7 +313,7 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .header-left {
@@ -324,8 +323,8 @@ onMounted(() => {
 
 .title {
   font-size: 24px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
+  color: #111827;
   margin-bottom: 4px;
 }
 
@@ -337,10 +336,12 @@ onMounted(() => {
 .stats-card {
   display: flex;
   gap: 24px;
-  padding: 16px;
+  padding: 20px;
   background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
 }
 
 .stat-item {
@@ -358,8 +359,8 @@ onMounted(() => {
 
 .stat-value {
   font-size: 24px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
+  color: #111827;
 }
 
 .stat-value.success {
@@ -371,7 +372,7 @@ onMounted(() => {
 }
 
 .stat-value.primary {
-  color: #409eff;
+  color: #3b82f6;
 }
 
 .config-form {
@@ -380,9 +381,9 @@ onMounted(() => {
 }
 
 .inline-tip {
-  margin-left: 8px;
+  margin-left: 12px;
   color: #6b7280;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .toolbar {
@@ -391,12 +392,12 @@ onMounted(() => {
 }
 
 .footer-actions {
-  margin-top: 20px;
+  margin-top: 24px;
   padding-top: 16px;
   border-top: 1px solid #e5e7eb;
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
 }
 
 .mr-10 {
@@ -412,12 +413,15 @@ onMounted(() => {
 }
 
 :deep(.el-table) {
-  --el-table-header-text-color: #4b5563;
+  --el-table-header-text-color: #6b7280;
   --el-table-row-hover-bg-color: #f9fafb;
 }
 
 :deep(.el-table th) {
   background-color: #f9fafb;
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 11px;
 }
 </style>

@@ -1180,8 +1180,7 @@ watch([searchName, statusFilter, approveFilter], () => {
 
 <style scoped>
 .page-container {
-  padding: 24px;
-  margin: 16px;
+  padding: 0;
 }
 
 /* 头部样式 */
@@ -1191,7 +1190,7 @@ watch([searchName, statusFilter, approveFilter], () => {
   align-items: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .header-left {
@@ -1201,8 +1200,8 @@ watch([searchName, statusFilter, approveFilter], () => {
 
 .title {
   font-size: 24px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
+  color: #111827;
   margin-bottom: 4px;
 }
 
@@ -1215,10 +1214,12 @@ watch([searchName, statusFilter, approveFilter], () => {
 .stats-card {
   display: flex;
   gap: 24px;
-  padding: 16px;
+  padding: 20px;
   background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
 }
 
 .stat-item {
@@ -1236,8 +1237,8 @@ watch([searchName, statusFilter, approveFilter], () => {
 
 .stat-value {
   font-size: 24px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
+  color: #111827;
 }
 
 .stat-value.success {
@@ -1249,7 +1250,7 @@ watch([searchName, statusFilter, approveFilter], () => {
 }
 
 .stat-value.primary {
-  color: #409eff;
+  color: #3b82f6;
 }
 
 /* 工具栏样式 */
@@ -1275,20 +1276,20 @@ watch([searchName, statusFilter, approveFilter], () => {
 
 /* 表格样式 */
 .price-text {
-  color: #e64340;
+  color: #ef4444;
   font-weight: 500;
 }
 
 /* 权益配置样式 */
 .benefit-tip {
-  padding: 12px;
+  padding: 12px 16px;
   background-color: #f9fafb;
-  border-radius: 6px;
+  border-radius: 8px;
   font-size: 14px;
 }
 
 .benefit-name {
-  color: #409eff;
+  color: #3b82f6;
   font-weight: 500;
 }
 
@@ -1299,7 +1300,7 @@ watch([searchName, statusFilter, approveFilter], () => {
   padding: 12px 16px;
   margin-bottom: 8px;
   background-color: #f9fafb;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .benefit-item-left {
@@ -1309,7 +1310,7 @@ watch([searchName, statusFilter, approveFilter], () => {
 }
 
 .benefit-icon {
-  color: #409eff;
+  color: #3b82f6;
 }
 
 .benefit-config {
@@ -1330,7 +1331,7 @@ watch([searchName, statusFilter, approveFilter], () => {
 
 .range-separator {
   margin: 0 10px;
-  color: #999;
+  color: #6b7280;
 }
 
 /* 价格组样式 */
@@ -1398,7 +1399,7 @@ watch([searchName, statusFilter, approveFilter], () => {
 
 .data-pre {
   font-size: 12px;
-  color: #606266;
+  color: #6b7280;
   background-color: #f5f7fa;
   padding: 10px;
   border-radius: 4px;
@@ -1413,20 +1414,23 @@ watch([searchName, statusFilter, approveFilter], () => {
 }
 
 .pagination-container {
-  margin-top: 20px;
+  margin-top: 24px;
   display: flex;
   justify-content: flex-end;
 }
 
 /* 表格样式优化 */
 :deep(.el-table) {
-  --el-table-header-text-color: #4b5563;
+  --el-table-header-text-color: #6b7280;
   --el-table-row-hover-bg-color: #f9fafb;
 }
 
 :deep(.el-table th) {
   background-color: #f9fafb;
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 11px;
 }
 
 /* 开关样式优化 */

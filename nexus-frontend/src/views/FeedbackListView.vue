@@ -428,60 +428,60 @@ onMounted(async () => {
 
 <style scoped>
 .page-container {
-  padding: 24px;
-  margin: 16px;
+  padding: 0;
 }
 
 .header {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
-  color: #1f2937;
+  color: #111827;
 }
 
 .subtitle {
   margin-top: 6px;
   color: #6b7280;
+  font-size: 14px;
 }
 
 .stats-card {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
+  gap: 16px;
+  margin-bottom: 24px;
 }
 
 .stat-item {
   background: #f8fafc;
-  border-radius: 10px;
-  padding: 14px;
+  border-radius: 8px;
+  padding: 16px;
 }
 
 .stat-label {
   color: #6b7280;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .stat-value {
-  margin-top: 6px;
-  font-size: 22px;
+  margin-top: 8px;
+  font-size: 24px;
   font-weight: 700;
   color: #111827;
 }
 
 .stat-value.warning {
-  color: #d97706;
+  color: #f59e0b;
 }
 
 .stat-value.primary {
-  color: #2563eb;
+  color: #3b82f6;
 }
 
 .stat-value.success {
-  color: #059669;
+  color: #10b981;
 }
 
 .feedback-title {
@@ -497,14 +497,14 @@ onMounted(async () => {
 
 .toolbar {
   display: flex;
-  gap: 10px;
+  gap: 12px;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
 }
 
 .pagination-container {
-  margin-top: 16px;
+  margin-top: 24px;
   display: flex;
   justify-content: flex-end;
 }

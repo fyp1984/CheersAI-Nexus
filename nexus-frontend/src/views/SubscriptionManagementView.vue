@@ -771,8 +771,7 @@ watch([searchUserId, searchPlan, statusFilter, renewalFilter], () => {
 
 <style scoped>
 .page-container {
-  padding: 24px;
-  margin: 16px;
+  padding: 0;
 }
 
 /* 头部样式 */
@@ -782,7 +781,7 @@ watch([searchUserId, searchPlan, statusFilter, renewalFilter], () => {
   align-items: center;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #e6e6e6;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .header-left {
@@ -792,8 +791,8 @@ watch([searchUserId, searchPlan, statusFilter, renewalFilter], () => {
 
 .title {
   font-size: 24px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
+  color: #111827;
   margin-bottom: 4px;
 }
 
@@ -806,10 +805,12 @@ watch([searchUserId, searchPlan, statusFilter, renewalFilter], () => {
 .stats-card {
   display: flex;
   gap: 24px;
-  padding: 16px;
+  padding: 20px;
   background-color: #fff;
   border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
 }
 
 .stat-item {
@@ -827,8 +828,8 @@ watch([searchUserId, searchPlan, statusFilter, renewalFilter], () => {
 
 .stat-value {
   font-size: 24px;
-  font-weight: 600;
-  color: #1f2937;
+  font-weight: 700;
+  color: #111827;
 }
 
 .stat-value.success {
@@ -844,7 +845,7 @@ watch([searchUserId, searchPlan, statusFilter, renewalFilter], () => {
 }
 
 .stat-value.primary {
-  color: #409eff;
+  color: #3b82f6;
 }
 
 /* 工具栏样式 */
@@ -903,20 +904,23 @@ watch([searchUserId, searchPlan, statusFilter, renewalFilter], () => {
 }
 
 .pagination-container {
-  margin-top: 20px;
+  margin-top: 24px;
   display: flex;
   justify-content: flex-end;
 }
 
 /* 表格样式优化 */
 :deep(.el-table) {
-  --el-table-header-text-color: #4b5563;
+  --el-table-header-text-color: #6b7280;
   --el-table-row-hover-bg-color: #f9fafb;
 }
 
 :deep(.el-table th) {
   background-color: #f9fafb;
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 11px;
 }
 
 /* 开关样式优化 */

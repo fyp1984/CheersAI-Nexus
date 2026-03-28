@@ -9,10 +9,10 @@
         <outputRelativeToContentRoot value="true" />
         <module name="feedback" />
         <module name="product" />
-        <module name="common" />
         <module name="auditlog" />
-        <module name="user-management" />
+        <module name="common" />
         <module name="auth" />
+        <module name="user-management" />
         <module name="membership" />
         <module name="system-config" />
       </profile>
