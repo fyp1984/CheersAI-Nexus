@@ -1,7 +1,7 @@
 package com.cheersai.nexus.product.entity;
 
-import com.cheersai.nexus.product.config.PostgreSqlJsonbTypeHandler;
-import com.cheersai.nexus.product.config.PostgreSqlUuidStringTypeHandler;
+import com.cheersai.nexus.common.config.PostgreSqlJsonbTypeHandler;
+import com.cheersai.nexus.common.config.PostgreSqlUuidStringTypeHandler;
 import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.KeyType;

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+npm<script setup lang="ts">
 import { onMounted } from 'vue'
 import { useAuthStore } from './store/modules/auth'
 
