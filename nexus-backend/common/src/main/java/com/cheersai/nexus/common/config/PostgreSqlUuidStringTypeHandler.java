@@ -1,4 +1,4 @@
-package com.cheersai.nexus.auth.config;
+package com.cheersai.nexus.common.config;
 
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;

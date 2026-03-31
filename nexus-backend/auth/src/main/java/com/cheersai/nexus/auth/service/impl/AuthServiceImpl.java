@@ -104,7 +104,7 @@ public class AuthServiceImpl implements AuthService {
         userMapper.insert(user);
 
         // 记录审计日志
-        saveAuditLog(user.getId(), "register", ipAddress, userAgent, true, null);
+        saveAuditLog(user.getId(), "info", "register", ipAddress, userAgent, true, null);
 
         // 生成 Token
         return generateTokens(user, ipAddress, userAgent);
@@ -151,7 +151,7 @@ public class AuthServiceImpl implements AuthService {
         userMapper.update(user);
 
         // 记录审计日志
-        saveAuditLog(user.getId(), "login", ipAddress, userAgent, true, null);
+        saveAuditLog(user.getId(), "info","login", ipAddress, userAgent, true, null);
 
         // 生成 Token
         return generateTokens(user, ipAddress, userAgent);
@@ -291,10 +291,11 @@ public class AuthServiceImpl implements AuthService {
     /**
      * 保存审计日志
      */
-    private void saveAuditLog(String userId, String action, String ipAddress,
+    private void saveAuditLog(String userId, String logType, String action, String ipAddress,
                               String userAgent, boolean success, String details) {
         AuditLog auditLog = AuditLog.builder()
                 .id(UUID.randomUUID().toString())
+                .logType(logType)
                 .operatorId(userId)
                 .action(action)
                 .ipAddress(ipAddress)

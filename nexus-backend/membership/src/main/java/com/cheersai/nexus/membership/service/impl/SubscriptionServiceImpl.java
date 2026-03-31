@@ -61,10 +61,6 @@ public class SubscriptionServiceImpl extends ServiceImpl<SubscriptionMapper, Sub
 
         List<Subscription> subscriptions = subscriptionMapper.selectListByQuery(queryWrapper);
         
-        if (subscriptions == null || subscriptions.isEmpty()) {
-            throw new RuntimeException("Null subscriptions!");
-        }
-        
         return subscriptions.stream()
                 .map(this::toSubscriptionDetailDTO)
                 .collect(Collectors.toList());
