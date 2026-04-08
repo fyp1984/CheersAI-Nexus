@@ -21,7 +21,6 @@
         <module>membership</module>
         <module>auditlog</module>
         <module>product</module>
-        <module>system-config</module>
     </modules>
 
     <!-- Spring Boot父依赖 -->

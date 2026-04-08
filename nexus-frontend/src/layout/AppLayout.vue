@@ -21,8 +21,7 @@ const menus = [
   { index: '/subscription/management', label: '订阅管理' },
   { index: '/feedback/list', label: '用户反馈' },
   { index: '/audit/logs', label: '审计日志' },
-  { index: '/notice/list', label: '公告系统' },
-  { index: '/system/config', label: '系统配置' }
+  { index: '/notice/list', label: '公告系统' }
 ]
 
 async function handleLogout() {

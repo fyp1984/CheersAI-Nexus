@@ -72,12 +72,6 @@ const routes: RouteRecordRaw[] = [
         name: 'NoticeList',
         component: () => import('../views/NoticeListView.vue'),
         meta: { title: '公告系统', priority: 'P1' }
-      },
-      {
-        path: 'system/config',
-        name: 'SystemConfig',
-        component: () => import('../views/SystemConfigView.vue'),
-        meta: { title: '系统配置', priority: 'P0' }
       }
     ]
   }
