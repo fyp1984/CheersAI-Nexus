@@ -21,3 +21,7 @@ mybatis-flex:
     - classpath*:/mapper/*.xml
   configuration:
     map-underscore-to-camel-case: true
+
+# Internal service-to-service auth
+internal:
+  secret: ${INTERNAL_SECRET:cheersai-internal-secret-2024}

@@ -21,3 +21,15 @@ mybatis-flex:
     - classpath*:/mapper/*.xml
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+jwt:
+  public-key: ${JWT_PUBLIC_KEY:}
+
+# Inter-service communication
+feedback:
+  service:
+    url: ${FEEDBACK_SERVICE_URL:http://localhost:8083}
+
+# Internal service-to-service auth
+internal:
+  secret: ${INTERNAL_SECRET:cheersai-internal-secret-2024}

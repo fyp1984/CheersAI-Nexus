@@ -33,6 +33,22 @@ export default defineConfig({
       '/api/v1/audit': {
         target: 'http://localhost:8087',
         changeOrigin: true
+      },
+      '/api/v1/external/events': {
+        target: 'http://localhost:8085',
+        changeOrigin: true
+      },
+      '/api/v1/external/feedbacks': {
+        target: 'http://localhost:8083',
+        changeOrigin: true
+      },
+      '/api/v1/desktop-members': {
+        target: 'http://localhost:8085',
+        changeOrigin: true
+      },
+      '/api/v1/api-keys': {
+        target: 'http://localhost:8085',
+        changeOrigin: true
       }
     }
   }

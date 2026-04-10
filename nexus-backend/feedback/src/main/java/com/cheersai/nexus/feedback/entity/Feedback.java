@@ -1,5 +1,6 @@
 package com.cheersai.nexus.feedback.entity;
 
+import com.cheersai.nexus.feedback.config.PostgreSqlJsonbTypeHandler;
 import com.cheersai.nexus.feedback.config.PostgreSqlUuidTypeHandler;
 import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
@@ -50,6 +51,15 @@ public class Feedback {
 
     @Column("resolved_at")
     private LocalDateTime resolvedAt;
+
+    // Desktop integration fields
+    @Column(value = "desktop_member_id", typeHandler = PostgreSqlUuidTypeHandler.class)
+    private UUID desktopMemberId;
+
+    private String source;
+
+    @Column(value = "external_user_info", typeHandler = PostgreSqlJsonbTypeHandler.class)
+    private String externalUserInfo;
 
     @Column("created_at")
     private LocalDateTime createdAt;

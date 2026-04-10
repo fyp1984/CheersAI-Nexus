@@ -62,6 +62,18 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '用户反馈', priority: 'P0' }
       },
       {
+        path: 'desktop/members',
+        name: 'DesktopMembers',
+        component: () => import('../views/DesktopMemberView.vue'),
+        meta: { title: '桌面会员', priority: 'P1' }
+      },
+      {
+        path: 'desktop/api-keys',
+        name: 'ApiKeys',
+        component: () => import('../views/ApiKeyView.vue'),
+        meta: { title: 'API 密钥', priority: 'P1' }
+      },
+      {
         path: 'audit/logs',
         name: 'AuditLogs',
         component: () => import('../views/AuditLogsView.vue'),

@@ -18,6 +18,7 @@ const searchKeyword = ref('')
 const productFilter = ref('')
 const typeFilter = ref('')
 const statusFilter = ref('')
+const sourceFilter = ref('')
 
 const currentPage = ref(1)
 const pageSize = ref(10)
@@ -71,9 +72,19 @@ const productOptions = computed(() => {
 })
 
 const filteredList = computed(() => {
+  let result = list.value
+
+  // Source filter
+  if (sourceFilter.value) {
+    result = result.filter((item) => {
+      const src = (item as any).source || 'internal'
+      return src === sourceFilter.value
+    })
+  }
+
   const keyword = searchKeyword.value.trim().toLowerCase()
-  if (!keyword) return list.value
-  return list.value.filter((item) => {
+  if (!keyword) return result
+  return result.filter((item) => {
     return (
       item.id.toLowerCase().includes(keyword) ||
       (item.title || '').toLowerCase().includes(keyword) ||
@@ -255,7 +266,7 @@ watch([searchKeyword], () => {
   currentPage.value = 1
 })
 
-watch([productFilter, typeFilter, statusFilter], async () => {
+watch([productFilter, typeFilter, statusFilter, sourceFilter], async () => {
   currentPage.value = 1
   await loadList()
 })
@@ -315,6 +326,11 @@ onMounted(async () => {
       <el-select v-model="statusFilter" placeholder="处理状态" clearable style="width: 160px">
         <el-option label="全部" value="" />
         <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
+      </el-select>
+      <el-select v-model="sourceFilter" placeholder="来源" clearable style="width: 140px">
+        <el-option label="全部" value="" />
+        <el-option label="内部" value="internal" />
+        <el-option label="外部(Desktop)" value="external" />
       </el-select>
       <el-button :loading="loading" type="primary" @click="loadList">刷新</el-button>
     </div>

@@ -20,6 +20,8 @@ const menus = [
   { index: '/member/plans', label: '会员管理' },
   { index: '/subscription/management', label: '订阅管理' },
   { index: '/feedback/list', label: '用户反馈' },
+  { index: '/desktop/members', label: '桌面会员' },
+  { index: '/desktop/api-keys', label: 'API 密钥' },
   { index: '/audit/logs', label: '审计日志' },
   { index: '/notice/list', label: '公告系统' }
 ]
