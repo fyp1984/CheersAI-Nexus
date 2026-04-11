@@ -97,6 +97,7 @@
                         <path>
                             <groupId>com.mybatis-flex</groupId>
                             <artifactId>mybatis-flex-processor</artifactId>
+                            <version>1.11.6</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
