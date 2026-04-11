@@ -1,0 +1,5 @@
+
+nexus-backend/common/target/*
+nexus-backend/feedback/target/*
+nexus-backend/membership/target/*
+nexus-backend/product/target/*
