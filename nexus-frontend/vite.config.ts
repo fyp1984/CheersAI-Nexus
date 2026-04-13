@@ -14,6 +14,14 @@ export default defineConfig({
         target: 'http://localhost:8082',
         changeOrigin: true
       },
+      '/api/v1/beta-applications': {
+        target: 'http://localhost:8082',
+        changeOrigin: true
+      },
+      '/nexus/api/beta-applications': {
+        target: 'http://localhost:8082',
+        changeOrigin: true
+      },
       '/api/v1/feedbacks': {
         target: 'http://localhost:8083',
         changeOrigin: true

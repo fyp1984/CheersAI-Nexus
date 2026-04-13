@@ -64,7 +64,11 @@ public class UserManagementController {
     @PatchMapping("/{userId}/status")
     public Result<UserRecordDTO> updateUserStatus(@PathVariable("userId") String userId,
                                                    @RequestParam("status") String status) {
-        return Result.success(userService.updateUserStatus(userId, status));
+        try {
+            return Result.success(userService.updateUserStatus(userId, status));
+        } catch (RuntimeException ex) {
+            return Result.error(400, ex.getMessage());
+        }
     }
 
     @PostMapping("/batch-status")

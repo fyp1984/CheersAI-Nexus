@@ -433,7 +433,8 @@ async function handleResetPassword(row: UserRecord) {
   try {
     await ElMessageBox.confirm(`确认重置账号 ${getDisplayName(row)} 的密码吗？`, '重置密码确认', { type: 'warning' })
     const result = await resetUserPassword(row.userId)
-    ElMessage.success(`密码已重置为 ${result.resetTo}`)
+    const loginHint = result.ssoUsername ? `，登录账号：${result.ssoUsername}` : ''
+    ElMessage.success(`密码已重置为 ${result.resetTo}${loginHint}`)
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error(getErrorMessage(error, '重置密码失败'))
