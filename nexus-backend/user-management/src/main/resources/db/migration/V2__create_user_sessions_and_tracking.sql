@@ -96,7 +96,7 @@ CREATE INDEX IF NOT EXISTS idx_users_phone_unverified ON nexus.users(phone) WHER
 
 -- 复合索引: 查找会员即将过期的用户
 CREATE INDEX IF NOT EXISTS idx_users_member_expiring ON nexus.users(member_expire_at) 
-    WHERE member_expire_at IS NOT NULL AND member_expire_at > NOW();
+    WHERE member_expire_at IS NOT NULL;
 
 -- -----------------------------------------------------
 -- 4. 更新 users 表注释（补充说明）

@@ -1,6 +1,8 @@
 package com.cheersai.nexus.user.service.impl;
 
 import com.cheersai.nexus.common.model.usermanagement.User;
+import com.cheersai.nexus.user.config.BetaNotificationProperties;
+import com.cheersai.nexus.user.dto.BetaApplyRequestDTO;
 import com.cheersai.nexus.user.dto.ResetPasswordResponseDTO;
 import com.cheersai.nexus.user.dto.UserCreateDTO;
 import com.cheersai.nexus.user.dto.UserListQueryDTO;
@@ -9,6 +11,8 @@ import com.cheersai.nexus.user.dto.UserRecordDTO;
 import com.cheersai.nexus.user.dto.UserStatusBatchUpdateDTO;
 import com.cheersai.nexus.user.dto.UserUpdateDTO;
 import com.cheersai.nexus.user.mapper.UserMapper;
+import com.cheersai.nexus.user.service.BetaNotificationService;
+import com.cheersai.nexus.user.service.BetaProvisioningService;
 import com.cheersai.nexus.user.service.UserService;
 import com.mybatisflex.core.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -33,9 +38,16 @@ public class UserServiceImpl implements UserService {
     private static final Set<String> VALID_ROLE = Set.of("user", "support", "operator", "admin");
     private static final Set<String> VALID_MEMBER_PLAN = Set.of("free", "pro", "pro_team", "enterprise");
     private static final String DEFAULT_PASSWORD = "123456";
+    private static final String BETA_DEFAULT_MEMBER_PLAN = "free";
+    private static final String STATUS_ACTIVE = "active";
+    private static final String STATUS_INACTIVE = "inactive";
+    private static final String STATUS_DISABLED = "disabled";
 
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final BetaProvisioningService betaProvisioningService;
+    private final BetaNotificationProperties betaNotificationProperties;
+    private final BetaNotificationService betaNotificationService;
 
     @Override
     public UserListResponseDTO getUsers(UserListQueryDTO queryDTO) {
@@ -158,6 +170,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("请求体不能为空");
         }
         User user = requireUser(userId);
+        String previousStatus = normalize(user.getStatus());
 
         String username = normalize(dto.getUsername());
         String nickname = normalize(dto.getNickname());
@@ -200,8 +213,10 @@ public class UserServiceImpl implements UserService {
             user.setMemberExpireAt(dto.getMemberExpireAt());
         }
 
+        maybeProvisionWhenActivating(user, previousStatus, normalize(user.getStatus()));
         user.setUpdatedAt(LocalDateTime.now());
         userMapper.update(user);
+        maybeNotifyWhenRejected(user, previousStatus, normalize(user.getStatus()));
         return toRecordDTO(user);
     }
 
@@ -209,12 +224,15 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserRecordDTO updateUserStatus(String userId, String status) {
         User user = requireUser(userId);
+        String previousStatus = normalize(user.getStatus());
         String safeStatus = normalize(status);
         ensureValidStatus(safeStatus);
 
+        maybeProvisionWhenActivating(user, previousStatus, safeStatus);
         user.setStatus(safeStatus);
         user.setUpdatedAt(LocalDateTime.now());
         userMapper.update(user);
+        maybeNotifyWhenRejected(user, previousStatus, safeStatus);
         return toRecordDTO(user);
     }
 
@@ -229,9 +247,12 @@ public class UserServiceImpl implements UserService {
 
         for (String userId : dto.getIds()) {
             User user = requireUser(userId);
+            String previousStatus = normalize(user.getStatus());
+            maybeProvisionWhenActivating(user, previousStatus, status);
             user.setStatus(status);
             user.setUpdatedAt(LocalDateTime.now());
             userMapper.update(user);
+            maybeNotifyWhenRejected(user, previousStatus, status);
         }
     }
 
@@ -239,10 +260,67 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public ResetPasswordResponseDTO resetPassword(String userId) {
         User user = requireUser(userId);
+        String ssoUsername = betaProvisioningService.resetSsoPassword(user, DEFAULT_PASSWORD);
         user.setPasswordHash(passwordEncoder.encode(DEFAULT_PASSWORD));
         user.setUpdatedAt(LocalDateTime.now());
         userMapper.update(user);
-        return ResetPasswordResponseDTO.builder().resetTo(DEFAULT_PASSWORD).build();
+        return ResetPasswordResponseDTO.builder()
+                .resetTo(DEFAULT_PASSWORD)
+                .ssoUsername(ssoUsername)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public UserRecordDTO applyBeta(BetaApplyRequestDTO dto) {
+        if (dto == null) {
+            throw new RuntimeException("请求体不能为空");
+        }
+
+        String name = normalize(dto.getName());
+        String email = normalize(dto.getEmail());
+        if (!StringUtils.hasText(name)) {
+            throw new RuntimeException("姓名不能为空");
+        }
+        if (!StringUtils.hasText(email)) {
+            throw new RuntimeException("邮箱不能为空");
+        }
+        String normalizedEmail = email.toLowerCase(Locale.ROOT);
+
+        User existingUser = findByEmailIgnoreCase(normalizedEmail);
+        if (existingUser != null) {
+            if ("active".equalsIgnoreCase(existingUser.getStatus())) {
+                throw new RuntimeException("该邮箱已开通，无需重复申请");
+            }
+            existingUser.setStatus("inactive");
+            existingUser.setNickname(name);
+            existingUser.setUpdatedAt(LocalDateTime.now());
+            userMapper.update(existingUser);
+            betaNotificationService.notifySubmitted(existingUser, dto.getLanguage());
+            return toRecordDTO(existingUser);
+        }
+
+        String username = ensureUniqueUsername(generateUsernameFromEmail(normalizedEmail));
+        LocalDateTime now = LocalDateTime.now();
+
+        User user = User.builder()
+                .id(UUID.randomUUID().toString())
+                .username(username)
+                .nickname(name)
+                .email(normalizedEmail)
+                .passwordHash(passwordEncoder.encode(generateRandomPassword()))
+                .status("inactive")
+                .role("user")
+                .memberPlanCode(BETA_DEFAULT_MEMBER_PLAN)
+                .emailVerified(false)
+                .phoneVerified(false)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+
+        userMapper.insert(user);
+        betaNotificationService.notifySubmitted(user, dto.getLanguage());
+        return toRecordDTO(user);
     }
 
     private User requireUser(String userId) {
@@ -370,6 +448,105 @@ public class UserServiceImpl implements UserService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void maybeProvisionWhenActivating(User user, String previousStatus, String targetStatus) {
+        if (!STATUS_ACTIVE.equalsIgnoreCase(normalize(targetStatus))) {
+            return;
+        }
+        if (STATUS_ACTIVE.equalsIgnoreCase(normalize(previousStatus))) {
+            return;
+        }
+        if (!betaProvisioningService.isEnabled()) {
+            throw new RuntimeException("内测开通流程未启用，禁止直接审核通过。请先开启 BETA_PROVISION_ENABLED。");
+        }
+        if (!StringUtils.hasText(user.getEmail())) {
+            throw new RuntimeException("用户缺少邮箱，无法执行开通流程");
+        }
+        try {
+            BetaProvisioningService.ProvisioningResult provisioningResult = betaProvisioningService.provisionForActivation(user);
+            betaNotificationService.notifyApproved(
+                    user,
+                    provisioningResult.ssoUsername(),
+                    provisioningResult.filebayRepo(),
+                    provisioningResult.ssoInitialPassword()
+            );
+        } catch (RuntimeException ex) {
+            betaNotificationService.notifyProvisionFailed(user, ex.getMessage());
+            throw ex;
+        }
+    }
+
+    private void maybeNotifyWhenRejected(User user, String previousStatus, String targetStatus) {
+        if (!STATUS_INACTIVE.equalsIgnoreCase(normalize(previousStatus))) {
+            return;
+        }
+        if (!STATUS_DISABLED.equalsIgnoreCase(normalize(targetStatus))) {
+            return;
+        }
+        betaNotificationService.notifyRejected(user, betaNotificationProperties.getRejectedReason());
+    }
+
+    private User findByEmailIgnoreCase(String email) {
+        if (!StringUtils.hasText(email)) {
+            return null;
+        }
+        List<User> users = userMapper.selectListByQuery(
+                QueryWrapper.create()
+                        .select()
+                        .from(User.class)
+                        .where(User::getEmail).isNotNull()
+        );
+        return users.stream()
+                .filter(item -> StringUtils.hasText(item.getEmail()) && item.getEmail().equalsIgnoreCase(email))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String generateUsernameFromEmail(String email) {
+        String base = email.toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "_")
+                .replaceAll("^_+|_+$", "");
+        if (!StringUtils.hasText(base)) {
+            base = "beta_user";
+        }
+        if (base.length() > 24) {
+            base = base.substring(0, 24);
+        }
+        String suffix = Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString(UUID.nameUUIDFromBytes(email.getBytes()).toString().getBytes())
+                .replaceAll("[^a-zA-Z0-9]", "")
+                .toLowerCase(Locale.ROOT);
+        suffix = suffix.length() > 6 ? suffix.substring(0, 6) : suffix;
+        return base + "_" + suffix;
+    }
+
+    private String ensureUniqueUsername(String candidate) {
+        String username = candidate;
+        int attempt = 1;
+        while (usernameExists(username)) {
+            username = candidate + "_" + attempt;
+            attempt++;
+            if (attempt > 9999) {
+                throw new RuntimeException("用户名生成失败，请稍后重试");
+            }
+        }
+        return username;
+    }
+
+    private boolean usernameExists(String username) {
+        List<User> users = userMapper.selectListByQuery(
+                QueryWrapper.create()
+                        .select()
+                        .from(User.class)
+                        .where(User::getUsername).isNotNull()
+        );
+        return users.stream().anyMatch(item -> username.equalsIgnoreCase(item.getUsername()));
+    }
+
+    private String generateRandomPassword() {
+        return "Aa1!" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
     }
 
     private UserRecordDTO toRecordDTO(User user) {

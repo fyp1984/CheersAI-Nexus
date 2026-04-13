@@ -68,6 +68,7 @@ export type UserBatchStatusUpdateDTO = {
 
 export type ResetPasswordResponse = {
   resetTo: string
+  ssoUsername?: string
 }
 
 export async function fetchUsers(query: UserListQuery) {
