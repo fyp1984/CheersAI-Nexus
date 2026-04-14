@@ -210,6 +210,20 @@ upload_package() {
         
         # 重新计算 MD5
         md5sum nexus-current.tar.gz > nexus-current.tar.gz.md5
+
+        # 生成运行时环境文件（优先 UAT，其次 PRO，再次通用）
+        if [ -f '${DEFAULT_APP_DIR}/config/.env.uat' ]; then
+            cp -f '${DEFAULT_APP_DIR}/config/.env.uat' '${DEFAULT_APP_DIR}/config/.env.runtime'
+            echo '使用配置文件: config/.env.uat'
+        elif [ -f '${DEFAULT_APP_DIR}/config/.env.pro' ]; then
+            cp -f '${DEFAULT_APP_DIR}/config/.env.pro' '${DEFAULT_APP_DIR}/config/.env.runtime'
+            echo '使用配置文件: config/.env.pro'
+        elif [ -f '${DEFAULT_APP_DIR}/config/.env' ]; then
+            cp -f '${DEFAULT_APP_DIR}/config/.env' '${DEFAULT_APP_DIR}/config/.env.runtime'
+            echo '使用配置文件: config/.env'
+        else
+            echo '未找到可用的 .env 配置文件，保持现状'
+        fi
         
         echo '部署包解压完成'
     "
@@ -240,38 +254,45 @@ restart_services() {
     
     ssh ${SERVER_USER}@${SERVER_HOST} "
         set -e
+
+        # 更新 systemd 服务定义并重新加载
+        if [ -d '${DEFAULT_APP_DIR}/systemd' ]; then
+            sudo cp -f '${DEFAULT_APP_DIR}/systemd/'*.service /etc/systemd/system/ || true
+            sudo systemctl daemon-reload
+            echo 'systemd 服务定义已更新'
+        fi
         
         echo '停止旧服务...'
-        systemctl stop nexus-auditlog 2>/dev/null || true
-        systemctl stop nexus-membership 2>/dev/null || true
-        systemctl stop nexus-product 2>/dev/null || true
-        systemctl stop nexus-feedback 2>/dev/null || true
-        systemctl stop nexus-user-management 2>/dev/null || true
-        systemctl stop nexus-auth 2>/dev/null || true
+        sudo systemctl stop nexus-auditlog 2>/dev/null || true
+        sudo systemctl stop nexus-membership 2>/dev/null || true
+        sudo systemctl stop nexus-product 2>/dev/null || true
+        sudo systemctl stop nexus-feedback 2>/dev/null || true
+        sudo systemctl stop nexus-user-management 2>/dev/null || true
+        sudo systemctl stop nexus-auth 2>/dev/null || true
         
         echo '等待服务停止...'
         sleep 3
         
         echo '启动新服务...'
-        systemctl start nexus-auth
+        sudo systemctl start nexus-auth
         sleep 2
-        systemctl start nexus-user-management
+        sudo systemctl start nexus-user-management
         sleep 2
-        systemctl start nexus-feedback
+        sudo systemctl start nexus-feedback
         sleep 2
-        systemctl start nexus-product
+        sudo systemctl start nexus-product
         sleep 2
-        systemctl start nexus-membership
+        sudo systemctl start nexus-membership
         sleep 2
-        systemctl start nexus-auditlog
+        sudo systemctl start nexus-auditlog
         sleep 2
         
         echo '重启 Nginx...'
-        nginx -t && nginx -s reload || nginx
+        sudo nginx -t && sudo nginx -s reload || sudo nginx
         
         echo '检查服务状态...'
         for svc in nexus-auth nexus-user-management nexus-feedback nexus-product nexus-membership nexus-auditlog; do
-            if systemctl is-active --quiet \$svc; then
+            if sudo systemctl is-active --quiet \$svc; then
                 echo \"✓ \$svc is running\"
             else
                 echo \"✗ \$svc is NOT running\"

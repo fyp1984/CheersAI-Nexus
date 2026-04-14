@@ -96,6 +96,8 @@ function Clear-Build {
     }
     New-Item -ItemType Directory -Path "$OutputDir\backend" -Force | Out-Null
     New-Item -ItemType Directory -Path "$OutputDir\frontend" -Force | Out-Null
+    New-Item -ItemType Directory -Path "$OutputDir\config" -Force | Out-Null
+    New-Item -ItemType Directory -Path "$OutputDir\systemd" -Force | Out-Null
     Write-Success "Build directory created: $OutputDir"
 }
 
@@ -166,6 +168,18 @@ function Build-Frontend {
     }
 }
 
+# Prepare deployment configs
+function Prepare-DeployConfigs {
+    Write-Info "========== Preparing deployment configs =========="
+
+    $deployConfigDir = Join-Path $DeployDir "config"
+    $deploySystemdDir = Join-Path $DeployDir "systemd"
+    Copy-Item -Path "$deployConfigDir\*" -Destination "$OutputDir\config" -Recurse -Force
+    Copy-Item -Path "$deploySystemdDir\*" -Destination "$OutputDir\systemd" -Recurse -Force
+
+    Write-Success "Deployment configs prepared"
+}
+
 # Create deploy package
 function New-DeployPackage {
     Write-Info "========== Creating Deploy Package =========="
@@ -184,6 +198,7 @@ Services:
 - nexus-product.jar    (port: 8085, API: /api/v1/products)
 
 Frontend: dist/
+Deployment Configs: config/, systemd/
 "@
     $manifestPath = Join-Path $OutputDir "deploy-manifest.txt"
     Set-Content -Path $manifestPath -Value $manifest -Encoding UTF8
@@ -209,6 +224,22 @@ Frontend: dist/
             Get-ChildItem -Path $frontendPath -Recurse -File | ForEach-Object {
                 $relativePath = $_.FullName.Substring($frontendPath.Length + 1)
                 [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, "frontend/$relativePath", [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+            }
+        }
+
+        $configPath = Join-Path $OutputDir "config"
+        if (Test-Path $configPath) {
+            Get-ChildItem -Path $configPath -Recurse -Force -File | ForEach-Object {
+                $relativePath = $_.FullName.Substring($configPath.Length + 1)
+                [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, "config/$relativePath", [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+            }
+        }
+
+        $systemdPath = Join-Path $OutputDir "systemd"
+        if (Test-Path $systemdPath) {
+            Get-ChildItem -Path $systemdPath -Recurse -Force -File | ForEach-Object {
+                $relativePath = $_.FullName.Substring($systemdPath.Length + 1)
+                [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, "systemd/$relativePath", [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
             }
         }
 
@@ -252,6 +283,7 @@ function Main {
     Clear-Build
     Build-Backend
     Build-Frontend
+    Prepare-DeployConfigs
     New-DeployPackage
     Show-Summary
 

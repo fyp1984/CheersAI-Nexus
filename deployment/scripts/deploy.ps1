@@ -122,11 +122,23 @@ function Upload-Package {
     Write-Info "Uploading package..."
     scp -o StrictHostKeyChecking=no $PackagePath "${User}@${Server}:$remoteNewZip"
 
-    $commands = @"
+$commands = @"
 cd $AppDir
 echo 'Extracting package...'
 unzip -o nexus-new.zip -d . 2>/dev/null || python3 -c "import zipfile; zipfile.ZipFile('nexus-new.zip').extractall('.')"
 mv nexus-new.zip nexus-current.zip
+if [ -f "$AppDir/config/.env.uat" ]; then
+    cp -f $AppDir/config/.env.uat $AppDir/config/.env.runtime
+    echo 'Using config/.env.uat'
+elif [ -f "$AppDir/config/.env.pro" ]; then
+    cp -f $AppDir/config/.env.pro $AppDir/config/.env.runtime
+    echo 'Using config/.env.pro'
+elif [ -f "$AppDir/config/.env" ]; then
+    cp -f $AppDir/config/.env $AppDir/config/.env.runtime
+    echo 'Using config/.env'
+else
+    echo 'No runtime env file found under config/'
+fi
 echo 'Package extracted'
 ls -la $AppDir/
 "@
@@ -154,28 +166,33 @@ function Restart-Services {
         return
     }
 
-    $commands = @"
+$commands = @"
+if [ -d "$AppDir/systemd" ]; then
+    sudo cp -f $AppDir/systemd/*.service /etc/systemd/system/ || true
+    sudo systemctl daemon-reload
+    echo 'Systemd unit files updated'
+fi
 echo 'Stopping services...'
-systemctl stop nexus-product 2>/dev/null || true
-systemctl stop nexus-feedback 2>/dev/null || true
-systemctl stop nexus-user-management 2>/dev/null || true
-systemctl stop nexus-auth 2>/dev/null || true
+sudo systemctl stop nexus-product 2>/dev/null || true
+sudo systemctl stop nexus-feedback 2>/dev/null || true
+sudo systemctl stop nexus-user-management 2>/dev/null || true
+sudo systemctl stop nexus-auth 2>/dev/null || true
 echo 'Waiting for services to stop...'
 sleep 3
 echo 'Starting services...'
-systemctl start nexus-auth
+sudo systemctl start nexus-auth
 sleep 2
-systemctl start nexus-user-management
+sudo systemctl start nexus-user-management
 sleep 2
-systemctl start nexus-feedback
+sudo systemctl start nexus-feedback
 sleep 2
-systemctl start nexus-product
+sudo systemctl start nexus-product
 sleep 2
 echo 'Restarting Nginx...'
-nginx -t && nginx -s reload || nginx
+sudo nginx -t && sudo nginx -s reload || sudo nginx
 echo 'Checking service status...'
 for svc in nexus-auth nexus-user-management nexus-feedback nexus-product; do
-    if systemctl is-active --quiet \$svc; then
+    if sudo systemctl is-active --quiet \$svc; then
         echo ""[OK] \$svc is running""
     else
         echo ""[FAIL] \$svc is NOT running""

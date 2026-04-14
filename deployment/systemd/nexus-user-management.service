@@ -15,6 +15,7 @@ Environment="JAVA_HOME=/usr/lib/jvm/java-21-openjdk"
 Environment="SPRING_PROFILES_ACTIVE=prod"
 Environment="SERVER_PORT=8083"
 Environment="APP_HOME=/home/nexus/app"
+EnvironmentFile=-/home/nexus/app/config/.env.runtime
 
 # JVM 参数
 ExecStart=/usr/bin/java \
