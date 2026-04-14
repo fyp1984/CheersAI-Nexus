@@ -95,6 +95,8 @@ clean_build() {
     rm -rf "${OUTPUT_DIR}"
     mkdir -p "${OUTPUT_DIR}/backend"
     mkdir -p "${OUTPUT_DIR}/frontend"
+    mkdir -p "${OUTPUT_DIR}/config"
+    mkdir -p "${OUTPUT_DIR}/systemd"
     log_success "构建目录已创建: ${OUTPUT_DIR}"
 }
 
@@ -163,6 +165,18 @@ build_frontend() {
     log_success "前端构建完成"
 }
 
+# 准备部署配置
+prepare_deploy_configs() {
+    log_info "========== 准备部署配置 =========="
+
+    # 配置目录（application-prod.yml, .env.*）
+    cp -r "${DEPLOY_DIR}/config/." "${OUTPUT_DIR}/config/"
+    # systemd 服务文件
+    cp -r "${DEPLOY_DIR}/systemd/." "${OUTPUT_DIR}/systemd/"
+
+    log_success "部署配置准备完成"
+}
+
 # 创建部署包
 create_deploy_package() {
     log_info "========== 创建部署包 =========="
@@ -185,11 +199,12 @@ create_deploy_package() {
 - nexus-product.jar    (端口: 8085, API: /api/v1/products)
 
 前端静态资源: dist/
+部署配置: config/, systemd/
 EOF
     
     # 创建部署包
     cd "${OUTPUT_DIR}"
-    tar -czf "${PACKAGE_PATH}" backend/ frontend/ deploy-manifest.txt
+    tar -czf "${PACKAGE_PATH}" backend/ frontend/ config/ systemd/ deploy-manifest.txt
     
     # 生成 MD5 校验文件
     md5sum "${PACKAGE_NAME}" > "${PACKAGE_PATH}.md5"
@@ -239,6 +254,9 @@ main() {
     
     # 构建前端
     build_frontend
+
+    # 准备部署配置
+    prepare_deploy_configs
     
     # 创建部署包
     create_deploy_package

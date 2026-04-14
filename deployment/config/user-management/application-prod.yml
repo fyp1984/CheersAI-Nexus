@@ -67,15 +67,15 @@ beta:
   provision:
     enabled: ${BETA_PROVISION_ENABLED:true}
     http-timeout-seconds: ${BETA_PROVISION_HTTP_TIMEOUT:15}
-    sso-base-url: ${SSO_API_URL:}
+    sso-base-url: ${SSO_API_URL:https://uat-sso.cheersai.cloud/api}
     sso-owner: ${SSO_PROVISION_OWNER:CheersAI}
-    sso-client-id: ${SSO_PROVISION_CLIENT_ID:${DESKTOP_SSO_CLIENT_ID:}}
-    sso-client-secret: ${SSO_PROVISION_CLIENT_SECRET:${DESKTOP_SSO_CLIENT_SECRET:}}
+    sso-client-id: ${SSO_PROVISION_CLIENT_ID:${DESKTOP_SSO_CLIENT_ID:dfdac2afe4a00df8f8f9}}
+    sso-client-secret: ${SSO_PROVISION_CLIENT_SECRET:${DESKTOP_SSO_CLIENT_SECRET:24ed460ef49675c8ddeb99f525ff50f8fc914c4b}}
     sso-default-role: ${SSO_PROVISION_DEFAULT_ROLE:desktop_team_admin}
     sso-signup-application: ${SSO_PROVISION_SIGNUP_APPLICATION:desktop}
-    filebay-base-url: ${FILEBAY_BASE_URL:${GITEA_URL:}}
-    filebay-admin-username: ${FILEBAY_ADMIN_USERNAME:}
-    filebay-admin-password: ${FILEBAY_ADMIN_PASSWORD:}
+    filebay-base-url: ${FILEBAY_BASE_URL:${GITEA_URL:https://uat-filebay.cheersai.cloud}}
+    filebay-admin-username: ${FILEBAY_ADMIN_USERNAME:admin}
+    filebay-admin-password: ${FILEBAY_ADMIN_PASSWORD:3DIS9cqlR8@E}
     filebay-default-repo: ${FILEBAY_DEFAULT_REPO:workspace}
     filebay-default-branch: ${FILEBAY_DEFAULT_BRANCH:main}
     filebay-default-masked-dir: ${FILEBAY_DEFAULT_MASKED_DIR:masked}
