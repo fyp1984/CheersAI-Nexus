@@ -4,7 +4,6 @@ import com.cheersai.nexus.common.model.usermanagement.User;
 import com.cheersai.nexus.user.config.BetaNotificationProperties;
 import com.cheersai.nexus.user.dto.BetaApplyRequestDTO;
 import com.cheersai.nexus.user.dto.ResetPasswordResponseDTO;
-import com.cheersai.nexus.user.dto.UserProvisionResultDTO;
 import com.cheersai.nexus.user.dto.UserCreateDTO;
 import com.cheersai.nexus.user.dto.UserListQueryDTO;
 import com.cheersai.nexus.user.dto.UserListResponseDTO;
@@ -269,11 +268,6 @@ public class UserServiceImpl implements UserService {
                 .resetTo(DEFAULT_PASSWORD)
                 .ssoUsername(ssoUsername)
                 .build();
-    }
-
-    @Override
-    public UserProvisionResultDTO getProvisionResult(String userId) {
-        return betaProvisioningService.buildProvisionResult(requireUser(userId));
     }
 
     @Override

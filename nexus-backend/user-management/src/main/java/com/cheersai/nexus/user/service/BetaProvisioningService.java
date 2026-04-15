@@ -2,7 +2,6 @@ package com.cheersai.nexus.user.service;
 
 import com.cheersai.nexus.common.model.usermanagement.User;
 import com.cheersai.nexus.user.config.BetaProvisionProperties;
-import com.cheersai.nexus.user.dto.UserProvisionResultDTO;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -119,40 +118,6 @@ public class BetaProvisioningService {
         ensureFilebayRepo(username);
         ensureFilebayMaskedDir(username);
         return new ProvisioningResult(username, filebayRepo, ssoInitialPassword);
-    }
-
-    public UserProvisionResultDTO buildProvisionResult(User user) {
-        if (user == null) {
-            throw new RuntimeException("用户不存在，无法查询开通结果");
-        }
-        if (!StringUtils.hasText(user.getEmail())) {
-            throw new RuntimeException("用户缺少邮箱，无法查询开通结果");
-        }
-
-        String usernameCandidate = StringUtils.hasText(user.getUsername()) ? user.getUsername() : generateUsername(user.getEmail());
-        String username = normalizeExternalUsername(usernameCandidate);
-        String filebayRepo = safeTrim(properties.getFilebayDefaultRepo());
-        String maskedDir = safeTrim(properties.getFilebayDefaultMaskedDir()).replaceAll("^/+|/+$", "");
-        if (!StringUtils.hasText(maskedDir)) {
-            maskedDir = "masked";
-        }
-
-        return UserProvisionResultDTO.builder()
-                .userId(user.getId())
-                .email(user.getEmail())
-                .username(username)
-                .status(user.getStatus())
-                .ssoOwner(safeTrim(properties.getSsoOwner()))
-                .ssoSubjectId(subjectRef(username))
-                .ssoUsername(username)
-                .filebayBaseUrl(safeTrim(properties.getFilebayBaseUrl()))
-                .filebayUsername(username)
-                .filebayRepo(filebayRepo)
-                .filebayBranch(safeTrim(properties.getFilebayDefaultBranch()))
-                .filebayMaskedDir(maskedDir)
-                .createdResources(List.of("sso_user", "filebay_user", "filebay_repo", "masked_dir"))
-                .provisionedAt(user.getUpdatedAt())
-                .build();
     }
 
     public String resetSsoPassword(User user, String newPassword) {

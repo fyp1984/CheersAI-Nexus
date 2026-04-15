@@ -5,7 +5,6 @@ import com.cheersai.nexus.user.dto.ResetPasswordResponseDTO;
 import com.cheersai.nexus.user.dto.UserCreateDTO;
 import com.cheersai.nexus.user.dto.UserListQueryDTO;
 import com.cheersai.nexus.user.dto.UserListResponseDTO;
-import com.cheersai.nexus.user.dto.UserProvisionResultDTO;
 import com.cheersai.nexus.user.dto.UserRecordDTO;
 import com.cheersai.nexus.user.dto.UserStatusBatchUpdateDTO;
 import com.cheersai.nexus.user.dto.UserUpdateDTO;
@@ -81,11 +80,6 @@ public class UserManagementController {
     @PostMapping("/{userId}/reset-password")
     public Result<ResetPasswordResponseDTO> resetPassword(@PathVariable("userId") String userId) {
         return Result.success(userService.resetPassword(userId));
-    }
-
-    @GetMapping("/{userId}/provision-result")
-    public Result<UserProvisionResultDTO> getProvisionResult(@PathVariable("userId") String userId) {
-        return Result.success(userService.getProvisionResult(userId));
     }
 }
 
