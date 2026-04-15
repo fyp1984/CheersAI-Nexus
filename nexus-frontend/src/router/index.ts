@@ -47,7 +47,13 @@ const routes: RouteRecordRaw[] = [
         path: 'member/plans',
         name: 'MemberPlans',
         component: () => import('../views/MemberPlansView.vue'),
-        meta: { title: '会员管理', priority: 'P0' }
+        meta: { title: '会员方案', priority: 'P0' }
+      },
+      {
+        path: 'member/management',
+        name: 'MemberManagement',
+        component: () => import('../views/UserListView.vue'),
+        meta: { title: '会员管理', priority: 'P0', roles: ['admin'] }
       },
       {
         path: 'subscription/management',
@@ -88,12 +94,17 @@ router.beforeEach((to) => {
 
   const authStore = useAuthStore()
   const isPublicRoute = to.path === '/login' || to.path === '/register'
+  const allowedRoles = to.meta.roles as string[] | undefined
 
   if (!isPublicRoute && !authStore.isAuthenticated) {
     return '/login'
   }
 
   if (isPublicRoute && authStore.isAuthenticated) {
+    return '/dashboard'
+  }
+
+  if (allowedRoles && authStore.user?.role && !allowedRoles.includes(authStore.user.role)) {
     return '/dashboard'
   }
 

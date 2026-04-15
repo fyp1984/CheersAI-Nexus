@@ -111,7 +111,7 @@ build_backend() {
     mvn -pl common -am clean install -DskipTests -q
     
     # 构建所有业务模块
-    log_info "构建业务模块 (auth, user-management, feedback, product)..."
+    log_info "构建业务模块 (auth, user-management, feedback, product, membership, auditlog)..."
     mvn clean package -DskipTests -q
     
     # 复制 JAR 文件到输出目录
@@ -139,6 +139,18 @@ build_backend() {
     if [ -f "product/target/product-1.0.0.jar" ]; then
         cp "product/target/product-1.0.0.jar" "${OUTPUT_DIR}/backend/nexus-product.jar"
         log_info "✓ product JAR 已复制"
+    fi
+
+    # Membership
+    if [ -f "membership/target/membership-1.0.0.jar" ]; then
+        cp "membership/target/membership-1.0.0.jar" "${OUTPUT_DIR}/backend/nexus-membership.jar"
+        log_info "✓ membership JAR 已复制"
+    fi
+
+    # AuditLog
+    if [ -f "auditlog/target/auditlog-0.0.1-SNAPSHOT.jar" ]; then
+        cp "auditlog/target/auditlog-0.0.1-SNAPSHOT.jar" "${OUTPUT_DIR}/backend/nexus-auditlog.jar"
+        log_info "✓ auditlog JAR 已复制"
     fi
     
     log_success "后端构建完成"
@@ -197,6 +209,8 @@ create_deploy_package() {
 - nexus-user-management.jar  (端口: 8083, API: /api/v1/users)
 - nexus-feedback.jar  (端口: 8084, API: /api/v1/feedbacks)
 - nexus-product.jar    (端口: 8085, API: /api/v1/products)
+- nexus-membership.jar (端口: 8086, API: /api/v1/plans,/api/v1/subscriptions)
+- nexus-auditlog.jar   (端口: 8087, API: /api/v1/audit-logs)
 
 前端静态资源: dist/
 部署配置: config/, systemd/

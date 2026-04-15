@@ -5,6 +5,7 @@ export type UserInfo = {
   username?: string
   nickname?: string
   avatarUrl?: string
+  role?: 'user' | 'support' | 'operator' | 'admin'
 }
 
 export type AuthResponse = {

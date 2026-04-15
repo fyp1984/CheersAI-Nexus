@@ -306,9 +306,19 @@ public class BetaProvisioningService {
                 null,
                 payload
         );
-        if (!is2xx(createUserResult.statusCode()) && !looksLikeAlreadyExists(createUserResult)) {
+        if (is2xx(createUserResult.statusCode())) {
+            waitForFilebayUser(username);
+            return;
+        }
+        String conflictingUsername = findFilebayUsernameByEmail(email);
+        if (StringUtils.hasText(conflictingUsername) && !username.equalsIgnoreCase(conflictingUsername)) {
+            throw new RuntimeException("FileBay 邮箱已被现有账号占用: " + email + " -> " + conflictingUsername);
+        }
+        if (!looksLikeAlreadyExists(createUserResult)) {
             throw new RuntimeException("FileBay 创建用户失败: HTTP " + createUserResult.statusCode());
         }
+
+        waitForFilebayUser(username);
     }
 
     private void ensureFilebayRepo(String username) {
@@ -342,6 +352,18 @@ public class BetaProvisioningService {
                 null,
                 payload
         );
+        if (createRepoResult.statusCode() == 404) {
+            waitForFilebayUser(username);
+            createRepoResult = request(
+                    HttpMethod.POST,
+                    safeTrim(properties.getFilebayBaseUrl()),
+                    "/api/v1/admin/users/" + username + "/repos",
+                    properties.getFilebayAdminUsername(),
+                    properties.getFilebayAdminPassword(),
+                    null,
+                    payload
+            );
+        }
         if (!is2xx(createRepoResult.statusCode()) && !looksLikeAlreadyExists(createRepoResult)) {
             throw new RuntimeException("FileBay 创建仓库失败: HTTP " + createRepoResult.statusCode());
         }
@@ -422,6 +444,59 @@ public class BetaProvisioningService {
     private String generatePassword() {
         String uuid = UUID.randomUUID().toString().replace("-", "");
         return "Aa1!" + uuid.substring(0, 12);
+    }
+
+    private void waitForFilebayUser(String username) {
+        for (int attempt = 0; attempt < 5; attempt++) {
+            HttpCallResult result = request(
+                    HttpMethod.GET,
+                    safeTrim(properties.getFilebayBaseUrl()),
+                    "/api/v1/users/" + username,
+                    properties.getFilebayAdminUsername(),
+                    properties.getFilebayAdminPassword(),
+                    null,
+                    null
+            );
+            if (result.statusCode() == 200) {
+                return;
+            }
+            try {
+                TimeUnit.MILLISECONDS.sleep(400L * (attempt + 1));
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException("等待 FileBay 用户创建完成时被中断");
+            }
+        }
+        throw new RuntimeException("FileBay 用户未就绪: " + username);
+    }
+
+    private String findFilebayUsernameByEmail(String email) {
+        HttpCallResult result = request(
+                HttpMethod.GET,
+                safeTrim(properties.getFilebayBaseUrl()),
+                "/api/v1/admin/users",
+                properties.getFilebayAdminUsername(),
+                properties.getFilebayAdminPassword(),
+                Map.of("page", 1, "limit", 200),
+                null
+        );
+        if (!is2xx(result.statusCode()) || !StringUtils.hasText(result.body())) {
+            return null;
+        }
+        try {
+            JsonNode root = objectMapper.readTree(result.body());
+            if (!root.isArray()) {
+                return null;
+            }
+            for (JsonNode item : root) {
+                if (email.equalsIgnoreCase(item.path("email").asText(""))) {
+                    return safeTrim(item.path("username").asText(""));
+                }
+            }
+        } catch (Exception ex) {
+            log.warn("parse filebay users by email failed: {}", ex.getMessage());
+        }
+        return null;
     }
 
     private String subjectRef(String username) {

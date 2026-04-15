@@ -238,6 +238,24 @@ public class AuthServiceImpl implements AuthService {
         userMapper.update(user);
     }
 
+    @Override
+    public UserInfo getCurrentUser(String userId) {
+        User user = userMapper.selectOneByUserId(userId);
+        if (user == null) {
+            throw new AuthBusinessException(AuthErrorCode.USER_NOT_FOUND);
+        }
+
+        return UserInfo.builder()
+                .id(user.getId())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .username(user.getUsername())
+                .nickname(user.getNickname())
+                .avatarUrl(user.getAvatarUrl())
+                .role(user.getRole())
+                .build();
+    }
+
     /**
      * 生成 Token
      */
@@ -284,6 +302,7 @@ public class AuthServiceImpl implements AuthService {
                         .username(user.getUsername())
                         .nickname(user.getNickname())
                         .avatarUrl(user.getAvatarUrl())
+                        .role(user.getRole())
                         .build())
                 .build();
     }

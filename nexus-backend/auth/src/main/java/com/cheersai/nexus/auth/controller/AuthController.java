@@ -112,10 +112,7 @@ public class AuthController {
     public Result<UserInfo> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userId = authentication.getPrincipal().toString();
-
-        // TODO: 查询用户信息并返回
-        // 这里简化处理，实际应该从数据库查询
-        return Result.success(UserInfo.builder().id(userId).build());
+        return Result.success(authService.getCurrentUser(userId));
     }
 
     /**

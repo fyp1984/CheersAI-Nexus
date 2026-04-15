@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { ElMessage } from 'element-plus'
+import { SwitchButton } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { logout } from '../api/auth'
 import { useAuthStore } from '../store/modules/auth'
@@ -12,17 +13,36 @@ const authStore = useAuthStore()
 
 const activeMenu = computed(() => route.path)
 
+type UserRole = 'user' | 'support' | 'operator' | 'admin'
+
 const menus = [
   { index: '/dashboard', label: '数据分析' },
   { index: '/product/list', label: '产品管理' },
   { index: '/pricing/config', label: '功能定价' },
   { index: '/user/list', label: '用户管理' },
-  { index: '/member/plans', label: '会员管理' },
+  { index: '/member/plans', label: '会员方案' },
+  { index: '/member/management', label: '会员管理', roles: ['admin'] as UserRole[] },
   { index: '/subscription/management', label: '订阅管理' },
   { index: '/feedback/list', label: '用户反馈' },
   { index: '/audit/logs', label: '审计日志' },
   { index: '/notice/list', label: '公告系统' }
 ]
+
+const currentUser = computed(() => authStore.user)
+const currentRole = computed<UserRole>(() => (authStore.user?.role as UserRole) || 'user')
+const currentUserName = computed(() => currentUser.value?.nickname || currentUser.value?.username || '当前用户')
+const currentUserEmail = computed(() => currentUser.value?.email || currentUser.value?.phone || '')
+const currentUserRoleLabel = computed(() => {
+  const roleMap: Record<UserRole, string> = {
+    user: '普通用户',
+    support: '客服',
+    operator: '运营',
+    admin: '管理员'
+  }
+  return roleMap[currentRole.value]
+})
+const currentUserAvatar = computed(() => currentUserName.value.trim().charAt(0).toUpperCase() || 'U')
+const visibleMenus = computed(() => menus.filter((menu) => !menu.roles || menu.roles.includes(currentRole.value)))
 
 async function handleLogout() {
   authStore.clearToken()
@@ -48,17 +68,21 @@ async function handleLogout() {
         </div>
       </div>
       <el-menu :default-active="activeMenu" router class="sidebar-menu">
-        <el-menu-item v-for="menu in menus" :key="menu.index" :index="menu.index">
+        <el-menu-item v-for="menu in visibleMenus" :key="menu.index" :index="menu.index">
           {{ menu.label }}
         </el-menu-item>
       </el-menu>
       <div class="sidebar-footer">
         <div class="user-info">
-          <div class="user-avatar">管</div>
+          <div class="user-avatar">{{ currentUserAvatar }}</div>
           <div class="user-details">
-            <span class="user-email">admin@cheersai.com</span>
-            <span class="user-role">管理员</span>
+            <span class="user-name">{{ currentUserName }}</span>
+            <span class="user-email">{{ currentUserEmail || '未绑定邮箱或手机号' }}</span>
+            <span class="user-role">{{ currentUserRoleLabel }}</span>
           </div>
+          <el-button class="logout-btn" text circle @click="handleLogout" title="登出">
+            <el-icon><SwitchButton /></el-icon>
+          </el-button>
         </div>
       </div>
     </el-aside>
@@ -70,9 +94,6 @@ async function handleLogout() {
             <span class="status-dot"></span>
             系统运行正常
           </span>
-        </div>
-        <div class="header-right">
-          <el-button type="primary" plain size="small" @click="handleLogout">退出</el-button>
         </div>
       </el-header>
       <el-main class="layout-main">
@@ -193,17 +214,40 @@ async function handleLogout() {
 .user-details {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.user-name {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .user-email {
   color: #ffffff;
   font-size: 13px;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .user-role {
   color: rgba(255, 255, 255, 0.5);
   font-size: 11px;
+}
+
+.logout-btn {
+  color: #d1d5db;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.logout-btn:hover {
+  color: #ffffff;
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.35);
 }
 
 .layout-header {
@@ -212,7 +256,7 @@ async function handleLogout() {
   border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   padding: 0 32px;
 }
 
@@ -234,12 +278,6 @@ async function handleLogout() {
   height: 8px;
   background: #10b981;
   border-radius: 50%;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .layout-main {
