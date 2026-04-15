@@ -4,7 +4,6 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { login } from '../api/auth'
-import { DEV_LOGIN_IDENTITY, DEV_LOGIN_PASSWORD } from '../constants/auth'
 import { useAuthStore } from '../store/modules/auth'
 import { getErrorMessage } from '../utils/api'
 
@@ -14,8 +13,8 @@ const authStore = useAuthStore()
 const formRef = ref<FormInstance>()
 const loading = ref(false)
 const form = reactive({
-  identity: DEV_LOGIN_IDENTITY,
-  password: DEV_LOGIN_PASSWORD
+  identity: '',
+  password: ''
 })
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -121,8 +120,6 @@ async function handleLogin() {
         <el-button native-type="submit" type="primary" class="submit-btn" :loading="loading">登录</el-button>
       </el-form>
 
-      <div class="dev-hint">开发环境已预置测试账号和密码，启动后点击登录即可直接进入页面检查。</div>
-
       <div class="bottom-actions">
         <el-button link type="primary" @click="router.push('/register')">注册账号</el-button>
       </div>
@@ -167,16 +164,6 @@ async function handleLogin() {
 .submit-btn {
   width: 100%;
   margin-top: 8px;
-}
-
-.dev-hint {
-  margin-top: 16px;
-  padding: 12px;
-  background: #f9fafb;
-  border-radius: 8px;
-  color: #6b7280;
-  font-size: 12px;
-  line-height: 1.5;
 }
 
 .bottom-actions {

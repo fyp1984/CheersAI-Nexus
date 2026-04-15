@@ -1,7 +1,7 @@
 [Unit]
-Description=CheersAI Nexus Auth Service
+Description=CheersAI Nexus Membership Service
 Documentation=https://github.com/cheersai/nexus-backend
-After=network.target
+After=network.target nexus-product.service
 Wants=network-online.target
 
 [Service]
@@ -10,40 +10,34 @@ User=nexus
 Group=nexus
 WorkingDirectory=/home/nexus/app/backend
 
-# JAR 文件
 Environment="JAVA_HOME=/usr/lib/jvm/java-21-openjdk"
 Environment="SPRING_PROFILES_ACTIVE=prod"
-Environment="SERVER_PORT=8082"
+Environment="SERVER_PORT=8086"
 Environment="APP_HOME=/home/nexus/app"
 EnvironmentFile=-/home/nexus/app/config/.env.uat
 EnvironmentFile=-/home/nexus/app/config/.env.runtime
 
-# JVM 参数
 ExecStart=/usr/bin/java \
     -Xms512m \
     -Xmx1024m \
     -XX:+UseG1GC \
     -XX:MaxGCPauseMillis=200 \
     -Djava.security.egd=file:/dev/./urandom \
-    -Dspring.config.location=/home/nexus/app/config/auth/ \
-    -jar /home/nexus/app/backend/nexus-auth.jar
+    -Dspring.config.location=/home/nexus/app/config/membership/ \
+    -jar /home/nexus/app/backend/nexus-membership.jar
 
-# 停止配置
 ExecStop=/bin/kill -SIGTERM $MAINPID
 SuccessExitStatus=143
 
-# 重启策略
 Restart=on-failure
 RestartSec=10
 StartLimitBurst=3
 StartLimitIntervalSec=60
 
-# 日志配置
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=nexus-auth
+SyslogIdentifier=nexus-membership
 
-# 权限配置
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict

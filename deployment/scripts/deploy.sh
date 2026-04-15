@@ -211,18 +211,12 @@ upload_package() {
         # 重新计算 MD5
         md5sum nexus-current.tar.gz > nexus-current.tar.gz.md5
 
-        # 生成运行时环境文件（优先 UAT，其次 PRO，再次通用）
-        if [ -f '${DEFAULT_APP_DIR}/config/.env.uat' ]; then
-            cp -f '${DEFAULT_APP_DIR}/config/.env.uat' '${DEFAULT_APP_DIR}/config/.env.runtime'
-            echo '使用配置文件: config/.env.uat'
-        elif [ -f '${DEFAULT_APP_DIR}/config/.env.pro' ]; then
-            cp -f '${DEFAULT_APP_DIR}/config/.env.pro' '${DEFAULT_APP_DIR}/config/.env.runtime'
-            echo '使用配置文件: config/.env.pro'
-        elif [ -f '${DEFAULT_APP_DIR}/config/.env' ]; then
-            cp -f '${DEFAULT_APP_DIR}/config/.env' '${DEFAULT_APP_DIR}/config/.env.runtime'
-            echo '使用配置文件: config/.env'
+        # 保留仓库内的 .env.uat 作为非敏感默认值，敏感值只从服务器 .env.runtime 注入
+        if [ -f '${DEFAULT_APP_DIR}/config/.env.runtime' ]; then
+            chmod 600 '${DEFAULT_APP_DIR}/config/.env.runtime' || true
+            echo '检测到服务器运行时密钥文件: config/.env.runtime'
         else
-            echo '未找到可用的 .env 配置文件，保持现状'
+            echo '警告: 缺少 config/.env.runtime，服务启动后可能因敏感配置缺失失败'
         fi
         
         echo '部署包解压完成'

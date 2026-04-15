@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { useRoute } from 'vue-router'
 import {
   createUser,
   fetchUserDetail,
@@ -19,6 +20,7 @@ import { fetchSubscriptionAuditLogs } from '../api/membership'
 import { getErrorMessage } from '../utils/api'
 
 type EditMode = 'create' | 'edit'
+const route = useRoute()
 
 const statusOptions: Array<{ label: string; value: UserStatus }> = [
   { label: '正常', value: 'active' },
@@ -175,6 +177,11 @@ const stats = computed(() => ({
   disabled: list.value.filter((item) => item.status === 'disabled').length,
   verified: list.value.filter((item) => item.emailVerified || item.phoneVerified).length
 }))
+
+const pageTitle = computed(() => String(route.meta.title || '用户管理'))
+const pageSubtitle = computed(() =>
+  pageTitle.value === '会员管理' ? '会员开通、状态调整、会员方案分配' : '账号管理、角色配置、会员方案维护'
+)
 
 function formatTime(value?: string) {
   if (!value) return '-'
@@ -451,8 +458,8 @@ onMounted(async () => {
   <el-card class="page-container" shadow="hover">
     <div class="header">
       <div>
-        <div class="title">用户管理</div>
-        <div class="subtitle">账号管理、角色配置、会员方案维护</div>
+        <div class="title">{{ pageTitle }}</div>
+        <div class="subtitle">{{ pageSubtitle }}</div>
       </div>
       <el-tag type="danger">P0</el-tag>
     </div>
