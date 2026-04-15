@@ -6,6 +6,7 @@ import com.cheersai.nexus.user.dto.UserCreateDTO;
 import com.cheersai.nexus.user.dto.UserListQueryDTO;
 import com.cheersai.nexus.user.dto.UserListResponseDTO;
 import com.cheersai.nexus.user.dto.UserRecordDTO;
+import com.cheersai.nexus.user.dto.UserProvisionResultDTO;
 import com.cheersai.nexus.user.dto.UserStatusBatchUpdateDTO;
 import com.cheersai.nexus.user.dto.UserUpdateDTO;
 
@@ -30,5 +31,7 @@ public interface UserService {
     ResetPasswordResponseDTO resetPassword(String userId);
 
     UserRecordDTO applyBeta(BetaApplyRequestDTO dto);
+
+    UserProvisionResultDTO getProvisionResult(String userId);
 }
 
