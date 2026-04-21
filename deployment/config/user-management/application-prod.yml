@@ -17,9 +17,9 @@ spring:
   
   # PostgreSQL 数据库配置
   datasource:
-    url: jdbc:postgresql://localhost:5432/cheersai
-    username: cheersai_user
-    password: ${DB_PASSWORD}
+    url: jdbc:postgresql://${DB_HOST:127.0.0.1}:${DB_PORT:5432}/${DB_NAME:cheersai}?currentSchema=${DB_SCHEMA:nexus}
+    username: ${DB_USER:nexus_app}
+    password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20
@@ -57,10 +57,38 @@ feign:
     response:
       enabled: true
 
-# JWT 配置
-jwt:
-  secret: ${JWT_SECRET}
-  access-token-expiration: 3600000
+# 内测申请审核通过后的自动开通链路
+beta:
+  provision:
+    enabled: ${BETA_PROVISION_ENABLED:true}
+    http-timeout-seconds: ${BETA_PROVISION_HTTP_TIMEOUT:15}
+    sso-base-url: ${SSO_API_URL:https://uat-sso.cheersai.cloud/api}
+    sso-owner: ${SSO_PROVISION_OWNER:CheersAI}
+    sso-client-id: ${SSO_PROVISION_CLIENT_ID:${DESKTOP_SSO_CLIENT_ID:}}
+    sso-client-secret: ${SSO_PROVISION_CLIENT_SECRET:${DESKTOP_SSO_CLIENT_SECRET:}}
+    sso-default-role: ${SSO_PROVISION_DEFAULT_ROLE:desktop_team_member}
+    sso-default-group: ${SSO_PROVISION_DEFAULT_GROUP:CheersAI/系统内测}
+    sso-signup-application: ${SSO_PROVISION_SIGNUP_APPLICATION:desktop}
+    default-password: ${BETA_PROVISION_DEFAULT_PASSWORD:2026@CheersAI}
+    filebay-base-url: ${FILEBAY_BASE_URL:${GITEA_URL:https://uat-filebay.cheersai.cloud}}
+    filebay-admin-username: ${FILEBAY_ADMIN_USERNAME:admin}
+    filebay-admin-password: ${FILEBAY_ADMIN_PASSWORD:}
+    filebay-mode: ${FILEBAY_MODE:PERSONAL_REPO}
+    filebay-org-prefix: ${FILEBAY_ORG_PREFIX:desktop}
+    filebay-org-visibility: ${FILEBAY_ORG_VISIBILITY:private}
+    filebay-org-create-default-team: ${FILEBAY_ORG_CREATE_DEFAULT_TEAM:false}
+    filebay-org-default-team-name: ${FILEBAY_ORG_DEFAULT_TEAM_NAME:members}
+    filebay-org-default-team-permission: ${FILEBAY_ORG_DEFAULT_TEAM_PERMISSION:write}
+    filebay-default-repo: ${FILEBAY_DEFAULT_REPO:workspace}
+    filebay-default-branch: ${FILEBAY_DEFAULT_BRANCH:main}
+    filebay-default-masked-dir: ${FILEBAY_DEFAULT_MASKED_DIR:masked}
+  notification:
+    enabled: ${BETA_NOTIFICATION_ENABLED:true}
+    http-timeout-seconds: ${BETA_NOTIFICATION_HTTP_TIMEOUT:10}
+    desktop-api-base-url: ${DESKTOP_API_BASE_URL:http://127.0.0.1:5001}
+    inner-api-key: ${DESKTOP_INNER_API_KEY:inner-api-key}
+    default-language: ${BETA_NOTIFICATION_DEFAULT_LANGUAGE:zh-Hans}
+    rejected-reason: ${BETA_NOTIFICATION_REJECTED_REASON:管理员审核未通过，如需帮助请联系支持人员。}
 
 # 日志配置
 logging:
