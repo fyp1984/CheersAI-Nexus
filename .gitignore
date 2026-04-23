@@ -5,3 +5,5 @@ nexus-backend/membership/target/*
 nexus-backend/product/target/*
 deployment/config/.env.runtime
 deployment/config/.env.runtime.*
+.DS_Store
+.tmp-nexus-uat-user-flow-test.py
